@@ -2,7 +2,7 @@ import { MagazordWebhookPedidoRegistrado } from "~~/shared/types/magazord"
 
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig(event)
-  const forwardUrl = config.forwardUrl
+  const forwardUrl = config.discord.webhook
 
   if (!forwardUrl) {
     throw createError({
