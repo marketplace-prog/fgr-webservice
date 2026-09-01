@@ -1,4 +1,38 @@
-import { MagazordPedidoPayload } from "~~/shared/types/magazord"
+import type {
+  MagazordPedidoItem,
+  MagazordPedidoPayload,
+} from "~~/shared/types/magazord"
+
+// Funções utilitárias de anonimização (LGPD)
+const maskName = (name?: string) => {
+  if (!name) return 'N/A'
+  return name.split(' ').map(n => n.charAt(0) + '***').join(' ')
+}
+
+const maskDoc = (doc?: string) => {
+  if (!doc) return 'N/A'
+  const digitsOnly = doc.replace(/\D/g, '')
+  if (!digitsOnly) return 'N/A'
+  return doc.replace(/\d/g, (c, i: number) => (i < doc.length - 4 ? '*' : c))
+}
+
+// Trunca valores para respeitar o limite de 1024 caracteres por field do Discord
+const truncate = (value: string, max = 1024) =>
+  value.length > max ? `${value.substring(0, max - 3)}...` : value
+
+/**
+ * A Magazord envia datas como "YYYY-MM-DD HH:mm:ss-03", ou seja, sem o ":00"
+ * no offset de fuso. O construtor nativo `Date()` não reconhece esse formato
+ * de forma confiável (em vários engines resulta em "Invalid Date", o que
+ * derrubava o handler ao chamar `.toISOString()`). Esta função normaliza o
+ * offset e cai num fallback seguro se a data vier inválida ou ausente.
+ */
+const parseMagazordDate = (raw?: string | null): Date => {
+  if (!raw) return new Date()
+  const normalized = raw.trim().replace(' ', 'T').replace(/([+-]\d{2})$/, '$1:00')
+  const parsed = new Date(normalized)
+  return isNaN(parsed.getTime()) ? new Date() : parsed
+}
 
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig(event)
@@ -12,12 +46,12 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    const body = await readBody<MagazordPedidoPayload>(event)
+    const rawBody = await readBody<MagazordPedidoPayload | { payload: MagazordPedidoPayload }>(event)
 
-    console.log(`[${new Date().toISOString()}] 🔔 Webhook recebido do Magazord:`, body)
-    
-    // Tratamento para caso o Magazord envie o JSON direto ou envelopado em "payload"
-    const pedido = body?.payload || body
+    // Alguns eventos da Magazord envelopam o pedido em `{ payload: {...} }`;
+    // aqui de fato tratamos os dois formatos, em vez de só comentar sobre isso.
+    const pedido: MagazordPedidoPayload | undefined =
+      rawBody && 'payload' in rawBody ? rawBody.payload : (rawBody as MagazordPedidoPayload)
 
     if (!pedido || !pedido.codigo) {
       throw createError({
@@ -28,66 +62,101 @@ export default defineEventHandler(async (event) => {
 
     console.log(`[${new Date().toISOString()}] 📦 Processando pedido #${pedido.codigo}`)
 
-    const formatCurrency = (val: number) =>
-      new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val || 0)
+    // Utilitário de moeda
+    const formatCurrency = (val: string | number | null | undefined) =>
+      new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(val) || 0)
 
-    // Os itens agora estão dentro do array de rastreio
-    const itensRastreio = pedido.arrayPedidoRastreio?.[0]?.pedidoItem || []
+    // --- Tratamento de Itens ---
+    const rastreioInfo = pedido.arrayPedidoRastreio?.[0]
+    const itensRastreio: MagazordPedidoItem[] = rastreioInfo?.pedidoItem || []
+
     const itensList = itensRastreio.length
-      ? itensRastreio.map((item: any) => `• **${item.quantidade}x** ${item.produtoNome} (${formatCurrency(item.valorItem)})`).join('\n')
-      : 'Nenhum item listado'
+      ? itensRastreio
+          .map((item) => `• **${item.quantidade}x** ${item.produtoNome || item.descricao || 'Item sem descrição'} (${formatCurrency(item.valorItem ?? item.valorUnitario)})`)
+          .join('\n')
+      : 'Itens não detalhados neste webhook'
+
+    // --- Canal de Venda ---
+    const canalVenda = pedido.marketplaceNome
+      ? `🛍️ **Marketplace:** ${pedido.marketplaceNome}${pedido.lojaMarketplaceNome ? ` (${pedido.lojaMarketplaceNome})` : ''}`
+      : `🌐 **E-commerce:** ${pedido.lojaNome || 'Loja Própria'}`
+
+    // --- Insights de Negócio ---
+    const freteCliente = Number(pedido.valorFrete || 0)
+    const freteCusto = Number(rastreioInfo?.valorFreteTransportadora || 0)
+
+    let freteInsight = ''
+    if (freteCliente === 0 && freteCusto > 0) {
+      freteInsight = `⚠️ **Atenção:** Frete grátis oferecido. Custo logístico de **${formatCurrency(freteCusto)}** absorvido pela loja/marketplace.`
+    } else if (freteCliente < freteCusto) {
+      freteInsight = `📉 **Subsídio:** Cliente pagou ${formatCurrency(freteCliente)}, mas o envio custará ${formatCurrency(freteCusto)}.`
+    } else {
+      freteInsight = `✅ **Frete Saudável:** Custo de envio coberto pelo valor cobrado do cliente.`
+    }
+
+    const slaPostagem = rastreioInfo?.dataLimitePostagem
+      ? `⏳ **SLA de Postagem:** Até ${parseMagazordDate(rastreioInfo.dataLimitePostagem).toLocaleDateString('pt-BR')}`
+      : 'SLA não informado'
+
+    const insights = `${freteInsight}\n${slaPostagem}`
+
+    // --- Anonimização ---
+    const clienteAnonimo = maskName(pedido.pessoaNome)
+    const docAnonimo = maskDoc(pedido.pessoaCpfCnpj)
+    const enderecoAnonimo = `***Rua/Número Ocultos (LGPD)***\nBairro: ${pedido.bairro || 'N/A'}\n${pedido.cidadeNome || 'N/A'}/${pedido.estadoSigla || 'N/A'}`
 
     // Formatação de Pagamento
-    const pagamento = `${pedido.formaPagamentoNome || 'Não informado'} - ${pedido.condicaoPagamentoNome || ''}`
-
-    // Endereço (agora na raiz do JSON)
-    const endereco = pedido.logradouro
-      ? `${pedido.logradouro}, ${pedido.numero || 'S/N'} - ${pedido.bairro}\n${pedido.cidadeNome}/${pedido.estadoSigla} - CEP: ${pedido.cep}`
-      : 'Não informado'
+    const pagamento = `${pedido.formaPagamentoNome || 'Não informado'}${pedido.condicaoPagamentoNome ? ` - ${pedido.condicaoPagamentoNome}` : ''}`
 
     // Construção do Discord Embed
     const discordPayload = {
-      username: 'Magazord Orders',
-      avatar_url: 'https://cdn-icons-png.flaticon.com/512/891/891462.png',
+      username: 'Notificações de Vendas',
+      avatar_url: 'https://cdn-icons-png.flaticon.com/512/3144/3144456.png', // Ícone de carrinho
       embeds: [
         {
-          title: `📦 Novo Pedido Registrado #${pedido.codigo}`,
+          title: truncate(`📦 Novo Pedido Registrado: #${pedido.codigo}`, 256),
+          description: truncate(canalVenda, 4096),
           color: 5763719, // Verde (#57F287)
           fields: [
             {
-              name: '👤 Cliente',
-              value: `**${pedido.pessoaNome || 'N/A'}**\nCPF/CNPJ: ${pedido.pessoaCpfCnpj || 'N/A'}\nEmail: ${pedido.pessoaEmail || 'N/A'}`,
+              name: '👤 Cliente (Anonimizado)',
+              value: truncate(`**${clienteAnonimo}**\nDoc: ${docAnonimo}`),
               inline: true,
             },
             {
               name: '📊 Situação',
-              value: pedido.pedidoSituacaoDescricao || 'Registrado',
+              value: truncate(pedido.pedidoSituacaoDescricaoDetalhada || pedido.pedidoSituacaoDescricao || 'Registrado'),
               inline: true,
             },
             {
               name: '💳 Pagamento',
-              value: pagamento,
+              value: truncate(pagamento),
               inline: false,
             },
             {
-              name: '📍 Endereço de Entrega',
-              value: endereco,
+              name: '📍 Região de Entrega',
+              value: truncate(enderecoAnonimo),
               inline: false,
             },
             {
               name: '🛒 Itens do Pedido',
-              value: itensList.length > 1024 ? itensList.substring(0, 1021) + '...' : itensList,
+              value: truncate(itensList),
               inline: false,
             },
             {
               name: '💰 Resumo de Valores',
-              value: `**Produtos:** ${formatCurrency(pedido.valorProduto)}\n**Frete:** ${formatCurrency(pedido.valorFrete)}\n**Desconto:** ${formatCurrency(pedido.valorDesconto)}\n**Total:** **${formatCurrency(pedido.valorTotal)}**`,
+              value: truncate(`**Produtos:** ${formatCurrency(pedido.valorProduto)}\n**Frete Cobrado:** ${formatCurrency(pedido.valorFrete)}\n**Total do Pedido:** **${formatCurrency(pedido.valorTotalFinal ?? pedido.valorTotal)}**`),
+              inline: true,
+            },
+            {
+              name: '💡 Insights da Venda',
+              value: truncate(insights),
               inline: false,
             },
           ],
-          timestamp: pedido.dataHora || new Date().toISOString(),
+          timestamp: parseMagazordDate(pedido.dataHora).toISOString(),
           footer: {
-            text: 'Magazord Webhook Proxy',
+            text: 'Magazord Webhook • Proteção LGPD Ativa',
           },
         },
       ],
@@ -95,35 +164,25 @@ export default defineEventHandler(async (event) => {
 
     const forwardResponse = await fetch(forwardUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(discordPayload),
     })
 
     if (!forwardResponse.ok) {
       const errorText = await forwardResponse.text()
       console.error(`🚨 Falha ao enviar para o Discord: HTTP ${forwardResponse.status} - ${errorText}`)
-
       throw createError({
         statusCode: 502,
         message: 'Erro ao encaminhar notificação para o Discord',
       })
     }
 
-    console.log(`✅ Webhook enviado com sucesso para o Discord`)
-
-    return {
-      message: 'Webhook recebido e enviado ao Discord com sucesso',
-    }
+    console.log(`✅ Webhook #${pedido.codigo} enviado com sucesso para o Discord!`)
+    return { message: 'Webhook processado e enviado com sucesso' }
 
   } catch (error: any) {
     console.error('🔥 Erro interno ao processar o webhook:', error)
-
-    if (error.statusCode) {
-      throw error
-    }
-
+    if (error.statusCode) throw error
     throw createError({
       statusCode: 400,
       message: 'Payload inválido ou erro interno ao processar requisição',
