@@ -7,7 +7,7 @@ export default defineEventHandler(async (event) => {
   if (!forwardUrl) {
     throw createError({
       statusCode: 500,
-      statusMessage: 'A variável DISCORD_WEBHOOK não está configurada no runtimeConfig',
+      message: 'A variável DISCORD_WEBHOOK não está configurada no runtimeConfig',
     })
   }
 
@@ -22,7 +22,7 @@ export default defineEventHandler(async (event) => {
     if (!pedido || !pedido.codigo) {
       throw createError({
         statusCode: 400,
-        statusMessage: 'Payload do webhook em formato inválido ou vazio',
+        message: 'Payload do webhook em formato inválido ou vazio',
       })
     }
 
@@ -107,7 +107,7 @@ export default defineEventHandler(async (event) => {
 
       throw createError({
         statusCode: 502,
-        statusMessage: 'Erro ao encaminhar notificação para o Discord',
+        message: 'Erro ao encaminhar notificação para o Discord',
       })
     }
 
@@ -126,7 +126,7 @@ export default defineEventHandler(async (event) => {
 
     throw createError({
       statusCode: 400,
-      statusMessage: 'Payload inválido ou erro interno ao processar requisição',
+      message: 'Payload inválido ou erro interno ao processar requisição',
     })
   }
 })
