@@ -1,4 +1,4 @@
-import { MagazordWebhookPedidoRegistrado } from "~~/shared/types/magazord"
+import { MagazordPedidoPayload } from "~~/shared/types/magazord"
 
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig(event)
@@ -12,58 +12,61 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    const body = await readBody<MagazordWebhookPedidoRegistrado>(event)
-    const pedido = body?.payload
+    const body = await readBody<MagazordPedidoPayload>(event)
 
-    if (!pedido) {
+    console.log(`[${new Date().toISOString()}] 🔔 Webhook recebido do Magazord:`, body)
+    
+    // Tratamento para caso o Magazord envie o JSON direto ou envelopado em "payload"
+    const pedido = body?.payload || body
+
+    if (!pedido || !pedido.codigo) {
       throw createError({
         statusCode: 400,
         statusMessage: 'Payload do webhook em formato inválido ou vazio',
       })
     }
 
-    console.log(`[${new Date().toISOString()}] 📦 Processando pedido #${pedido.codigo || pedido.id}`)
+    console.log(`[${new Date().toISOString()}] 📦 Processando pedido #${pedido.codigo}`)
 
     const formatCurrency = (val: number) =>
       new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val || 0)
 
-    // Lista formatada dos itens do pedido
-    const itensList = pedido.itens?.length
-      ? pedido.itens.map(item => `• **${item.quantidade}x** ${item.nome} (${formatCurrency(item.valorTotal)})`).join('\n')
+    // Os itens agora estão dentro do array de rastreio
+    const itensRastreio = pedido.arrayPedidoRastreio?.[0]?.pedidoItem || []
+    const itensList = itensRastreio.length
+      ? itensRastreio.map((item: any) => `• **${item.quantidade}x** ${item.produtoNome} (${formatCurrency(item.valorItem)})`).join('\n')
       : 'Nenhum item listado'
 
-    // Formas de pagamento
-    const pagamentosList = pedido.pagamentos?.length
-      ? pedido.pagamentos.map(p => `• ${p.formaPagamentoNome} (${p.parcelas}x) - ${formatCurrency(p.valor)}`).join('\n')
+    // Formatação de Pagamento
+    const pagamento = `${pedido.formaPagamentoNome || 'Não informado'} - ${pedido.condicaoPagamentoNome || ''}`
+
+    // Endereço (agora na raiz do JSON)
+    const endereco = pedido.logradouro
+      ? `${pedido.logradouro}, ${pedido.numero || 'S/N'} - ${pedido.bairro}\n${pedido.cidadeNome}/${pedido.estadoSigla} - CEP: ${pedido.cep}`
       : 'Não informado'
 
-    // Endereço de entrega
-    const endereco = pedido.enderecoEntrega
-      ? `${pedido.enderecoEntrega.logradouro}, ${pedido.enderecoEntrega.numero} - ${pedido.enderecoEntrega.bairro}\n${pedido.enderecoEntrega.cidade}/${pedido.enderecoEntrega.uf} - CEP: ${pedido.enderecoEntrega.cep}`
-      : 'Não informado'
-
-    // Construção da estrutura do Discord Embed
+    // Construção do Discord Embed
     const discordPayload = {
       username: 'Magazord Orders',
       avatar_url: 'https://cdn-icons-png.flaticon.com/512/891/891462.png',
       embeds: [
         {
-          title: `📦 Novo Pedido Registrado #${pedido.codigo || pedido.id}`,
+          title: `📦 Novo Pedido Registrado #${pedido.codigo}`,
           color: 5763719, // Verde (#57F287)
           fields: [
             {
               name: '👤 Cliente',
-              value: `**${pedido.cliente?.nome || 'N/A'}**\nCPF/CNPJ: ${pedido.cliente?.cpfCnpj || 'N/A'}\nEmail: ${pedido.cliente?.email || 'N/A'}`,
+              value: `**${pedido.pessoaNome || 'N/A'}**\nCPF/CNPJ: ${pedido.pessoaCpfCnpj || 'N/A'}\nEmail: ${pedido.pessoaEmail || 'N/A'}`,
               inline: true,
             },
             {
               name: '📊 Situação',
-              value: pedido.situacaoNome || 'Registrado',
+              value: pedido.pedidoSituacaoDescricao || 'Registrado',
               inline: true,
             },
             {
               name: '💳 Pagamento',
-              value: pagamentosList,
+              value: pagamento,
               inline: false,
             },
             {
@@ -78,11 +81,11 @@ export default defineEventHandler(async (event) => {
             },
             {
               name: '💰 Resumo de Valores',
-              value: `**Produtos:** ${formatCurrency(pedido.valorProdutos)}\n**Frete:** ${formatCurrency(pedido.valorFrete)}\n**Desconto:** ${formatCurrency(pedido.valorDesconto)}\n**Total:** **${formatCurrency(pedido.valorTotal)}**`,
+              value: `**Produtos:** ${formatCurrency(pedido.valorProduto)}\n**Frete:** ${formatCurrency(pedido.valorFrete)}\n**Desconto:** ${formatCurrency(pedido.valorDesconto)}\n**Total:** **${formatCurrency(pedido.valorTotal)}**`,
               inline: false,
             },
           ],
-          timestamp: pedido.dataCriacao || new Date().toISOString(),
+          timestamp: pedido.dataHora || new Date().toISOString(),
           footer: {
             text: 'Magazord Webhook Proxy',
           },
