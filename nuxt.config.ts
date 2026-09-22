@@ -4,7 +4,8 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   runtimeConfig: {
     discord: {
-      webhook: process.env.DISCORD_WEBHOOK || ''
+      novos_pedidos: process.env.DISCORD_WEBHOOK_NOVOS_PEDIDOS || '',
+      atualizacoes: process.env.DISCORD_WEBHOOK_ATUALIZACOES || '',
     }
   }
 })

@@ -1,11 +1,39 @@
 /**
- * Tipos do payload de webhook "pedido registrado" do Magazord.
- * Baseado no JSON de exemplo enviado (pedido #11997).
- *
- * Observação: dentro de `arrayPedidoRastreio[].pedidoItem`, o console.log original
- * truncou o conteúdo como "[Array]", então `MagazordPedidoItem` foi inferido a partir
- * dos campos já referenciados no webhook (quantidade, produtoNome, valorItem etc.).
- * Vale conferir/ajustar esse tipo contra um payload real assim que possível.
+ * @file shared/types/magazord.ts
+ * Enums baseados na documentação oficial da API Magazord
+ * Nota: Os valores abaixo são os mais comuns, mas APIs de e-commerce
+ * podem adicionar novos IDs dinamicamente.
+ */
+
+export enum MagazordOrigemPedido {
+  SITE = 1,
+  MARKETPLACE = 2,
+  MANUAL = 3
+}
+
+export enum MagazordPedidoSituacao {
+  AGUARDANDO_PAGAMENTO = 1,
+  CANCELADO_PAGAMENTO = 2,
+  EM_ANALISE_PAGAMENTO = 3,
+  APROVADO = 4,
+}
+
+export enum MagazordPessoaTipo {
+  FISICA = 1,
+  JURIDICA = 2
+}
+
+export enum MagazordFormaPagamento {
+  BOLETO_BANCARIO = 1,
+  CARTAO_MASTERCARD = 2,
+  CARTAO_VISA = 3,
+  CARTAO_DINERS = 4
+}
+
+/**
+ * ---------------------------------------------------------
+ * INTERFACES AUXILIARES
+ * ---------------------------------------------------------
  */
 
 export interface MagazordPedidoItem {
@@ -15,6 +43,7 @@ export interface MagazordPedidoItem {
   produtoNome?: string
   descricao?: string
   quantidade: number
+  /** Valores monetários frequentemente vêm como string formatada no Magazord */
   valorUnitario?: string | number
   valorItem?: string | number
   valorTotal?: string | number
@@ -26,7 +55,7 @@ export interface MagazordPedidoItem {
 export interface MagazordPedidoHistorico {
   id: number
   dataHora: string
-  pedidoSituacao: number
+  pedidoSituacao: MagazordPedidoSituacao | number
   pedidoSituacaoDescricao: string
   pedidoSituacaoDescricaoDetalhada: string
   tipo: number
@@ -62,7 +91,7 @@ export interface MagazordPedidoRastreio {
   transportadoraNome: string
   transportadoraTipo: number
   naoGeraRastreio: boolean
-  pedidoSituacao: number
+  pedidoSituacao: MagazordPedidoSituacao | number
   pedidoSituacaoEtapa: number
   pedidoSituacaoTipo: number
   pedidoSituacaoDescricao: string
@@ -76,45 +105,58 @@ export interface MagazordPedidoRastreio {
   tag_id: string | null
 }
 
+export interface MagazordPessoaContato {
+  tipo: number
+  contato: string
+}
+
+/**
+ * ---------------------------------------------------------
+ * PAYLOAD PRINCIPAL
+ * ---------------------------------------------------------
+ */
+
 export interface MagazordPedidoPayload {
+  // --- Identificação do Pedido ---
   id: number
   id_loja: number
   lojaNome: string
   codigo: string
   codigoSecundario: string | null
   dataHora: string
+  origem: MagazordOrigemPedido | number
+  
+  // --- Valores e Totalizadores ---
   valorProduto: string
   valorFrete: string
   valorDesconto: string
   valorAcrescimo: string
   valorPresente: string
   valorTotal: string
-  origem: number
-  pedidoIp: string | null
-  codigoVendedor: string | null
-  pessoaId: number
-  pessoaNome: string
-  pessoaCpfCnpj: string
-  pessoaEmail: string
-  pessoaTipo: number
-  pessoaDataNascimento: string | null
-  pessoaSexo: string | null
-  formaPagamentoId: number
-  formaPagamentoNome: string
-  condicaoPagamentoId: number
-  condicaoPagamentoNome: string
-  condicaoPagamentoParcelas: number
-  marketplaceId: number | null
-  marketplaceNome: string | null
-  codigoMarketplace: string | null
-  dataMarketplace: string | null
-  pedidoSituacao: number
+  valorTotalFinal: number
+  valorPersonalizacao: string | null
+  creditoUtilizado: string | null
+  cashbackUtilizado: string | null
+  
+  // --- Situação ---
+  pedidoSituacao: MagazordPedidoSituacao | number
   pedidoSituacaoEtapa: number
   pedidoSituacaoTipo: number
   pedidoSituacaoDescricao: string
   pedidoSituacaoDescricaoDetalhada: string
-  dataPreVenda: string | null
+  
+  // --- Dados do Cliente ---
+  pessoaId: number
+  pessoaNome: string
+  pessoaCpfCnpj: string
+  pessoaEmail: string
+  pessoaTipo: MagazordPessoaTipo | number
+  pessoaDataNascimento: string | null
+  pessoaSexo: string | null
+  pessoaContato: MagazordPessoaContato[]
   nomeDestinatario: string
+  
+  // --- Endereço de Entrega ---
   logradouro: string
   numero: string
   bairro: string
@@ -123,48 +165,70 @@ export interface MagazordPedidoPayload {
   estadoSigla: string
   paisNome: string | null
   cep: string
-  pedidoTrackingSource: string | null
-  pedidoTrackingUserAgent: string | null
-  pedidoTrackingParams: string | null
-  pedidoTrackingCountryCode: string | null
+  
+  // --- Pagamento ---
+  formaPagamentoId: MagazordFormaPagamento | number
+  formaPagamentoNome: string
+  condicaoPagamentoId: number
+  condicaoPagamentoNome: string
+  condicaoPagamentoParcelas: number
+  formaRecebimentoId: number
+  formaRecebimentoNome: string
+  gatewayPagamentoId: number | null
+  boletos: unknown[]
+  pedidoPagamentoPix: unknown | null
+  pedidoPagamentoAme: unknown | null
+  linkPagamento: string | null
+  
+  // --- Marketplace ---
+  marketplaceId: number | null
+  marketplaceNome: string | null
+  codigoMarketplace: string | null
+  dataMarketplace: string | null
+  lojaDoMarketplaceId: number | null
+  lojaDoMarketplaceNome: string | null
+  lojaMarketplaceId: number | null
+  lojaMarketplaceNome: string | null
+  
+  /** 
+   * Retornado como string JSON pela API.
+   * @example '{"icone":"marketplace-meli.svg"}'
+   * Requer `JSON.parse()` antes do uso. 
+   */
+  lojaMarketplaceOpcoes: string | null
+  
+  // --- Marketing, Cupons e Tracking ---
   cupomCodigo: string | null
   cupomId: number | null
   cupomValorDesconto: string | null
   cupomTipoDesconto: string | null
-  lojaDoMarketplaceId: number | null
-  lojaDoMarketplaceNome: string | null
-  /** Vem como string JSON (ex: `{"icone":"marketplace-meli.svg"}`) — dar JSON.parse se necessário */
-  lojaMarketplaceOpcoes: string | null
-  lojaMarketplaceId: number | null
-  lojaMarketplaceNome: string | null
-  formaRecebimentoId: number
-  formaRecebimentoNome: string
-  gatewayPagamentoId: number | null
+  pedidoTrackingSource: string | null
+  pedidoTrackingUserAgent: string | null
+  pedidoTrackingParams: string | null
+  pedidoTrackingCountryCode: string | null
+  pedidoTrackingConversion: string | null
+  
+  // --- Meta Dados Adicionais ---
+  pedidoIp: string | null
+  codigoVendedor: string | null
+  dataPreVenda: string | null
   tipoCadastroPM: string | null
   lojasOficiaisId: unknown[]
-  pedidoTrackingConversion: string | null
-  valorPersonalizacao: string | null
   lojaUrlImagem: string
   lojaUrl: string
-  creditoUtilizado: string | null
-  cashbackUtilizado: string | null
-  valorTotalFinal: number
-  arrayPedidoRastreio: MagazordPedidoRastreio[]
-  boletos: unknown[]
-  pedidoPagamentoPix: unknown | null
-  linkPagamento: string | null
   linkAvaliacao: string | null
   mostraProcessos: boolean
   monitoraPedido: boolean
-  pedidoPagamentoAme: unknown | null
+  
+  // --- Arrays Filhos ---
+  arrayPedidoRastreio: MagazordPedidoRastreio[]
   pedidoHistorico: MagazordPedidoHistorico[]
-  pessoaContato: {
-    tipo: number
-    contato: string
-  }[]
 }
 
-/** Alguns endpoints/eventos da Magazord envelopam o pedido em `{ payload: {...} }` */
+/** 
+ * Envelopamento Padrão de Webhook
+ * A API do Magazord geralmente envia o body envelopado na raiz 'payload'.
+ */
 export interface MagazordPedidoWebhookEnvelope {
   payload: MagazordPedidoPayload
 }
