@@ -19,6 +19,7 @@ import { useForm, Field as VeeField } from 'vee-validate'
 import { loginSchema } from '~~/shared/schemas/login.schema'
 import { toTypedSchema } from '@vee-validate/zod'
 import { toast } from 'vue-sonner'
+import { Loader, LucideLoaderPinwheel } from '@lucide/vue'
 
 definePageMeta({
   layout: 'no-sidebar',
@@ -34,7 +35,11 @@ const { handleSubmit } = useForm({
   },
 })
 
+
+const isLoading = ref(false)
+
 const onSubmit = handleSubmit(async (data) => {
+  isLoading.value = true
 
   const { error } = await supabase.auth.signInWithPassword({
     email: data.email,
@@ -44,6 +49,7 @@ const onSubmit = handleSubmit(async (data) => {
   if (error) {
     console.error('Error logging in:', error)
     toast.error('Error logging in: ' + error.message)
+    isLoading.value = false
     return
   }
 
@@ -104,10 +110,11 @@ const onSubmit = handleSubmit(async (data) => {
         </CardContent>
 
         <CardFooter class="flex flex-col gap-2">
-          <Button class="w-full" type="submit">
+          <Button class="w-full" type="submit" :disabled="isLoading">
+            <Loader v-if="isLoading" class="animate-spin" />
             Entrar
           </Button>
-          <Button variant="outline" class="w-full">
+          <Button variant="outline" class="w-full" :disabled="isLoading">
             Entrar com Google
           </Button>
         </CardFooter>

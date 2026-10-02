@@ -1,9 +1,12 @@
-<script lang="ts">
-export const description = "An inset sidebar with secondary navigation."
-export const iframeHeight = "800px"
-</script>
-
 <script setup lang="ts">
+/**
+ * @file app/layouts/default.vue
+ * @description This file contains the default layout for the application, including the sidebar and breadcrumb navigation.
+ * @version 1.0.0
+ * @author Alessandro Pinheiro
+ * @license MIT
+ */
+
 import AppSidebar from "@/components/AppSidebar.vue"
 import {
   Breadcrumb,
@@ -50,14 +53,3 @@ import {
     </SidebarInset>
   </SidebarProvider>
 </template>
-
-<script lang="ts" setup>
-/**
- * @file app/layouts/default.vue
- * @description This file contains the default layout for the application, including the sidebar and breadcrumb navigation.
- * @version 1.0.0
- * @author Alessandro Pinheiro
- * @license MIT
- */
-
-</script>
