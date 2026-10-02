@@ -1,0 +1,23 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "bunx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "./app",
+        "./server",
+        "./shared",
+        "./public"
+      ]
+    },
+    "git": { "command": "uvx", "args": ["mcp-server-git", "--repository", "."] },
+    "fetch": { "command": "uvx", "args": ["mcp-server-fetch"] },
+    "nuxt": { "type": "http", "url": "https://nuxt.com/mcp" },
+    "supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp?project_ref=SEU_PROJECT_REF&read_only=true"
+    },
+    "zod-docs": { "url": "https://share.inkeep.com/zod/mcp" }
+  }
+}

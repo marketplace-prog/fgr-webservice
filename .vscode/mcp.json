@@ -1,0 +1,34 @@
+{
+  "servers": {
+    "filesystem": {
+      "type": "stdio",
+      "command": "bunx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "${workspaceFolder}/app",
+        "${workspaceFolder}/server",
+        "${workspaceFolder}/shared",
+        "${workspaceFolder}/public"
+      ]
+    },
+    "git": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["mcp-server-git", "--repository", "${workspaceFolder}"]
+    },
+    "fetch": { "type": "stdio", "command": "uvx", "args": ["mcp-server-fetch"] },
+    "nuxt": { "type": "http", "url": "https://nuxt.com/mcp" },
+    "supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp?project_ref=${input:supabaseProjectRef}&read_only=true"
+    },
+  },
+  "inputs": [
+    {
+      "id": "supabaseProjectRef",
+      "type": "promptString",
+      "description": "Project ref do Supabase"
+    }
+  ]
+}
