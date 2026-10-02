@@ -44,7 +44,20 @@ import {
           </Breadcrumb>
         </div>
       </header>
-      <slot />
+      <div class="px-4">
+        <slot />
+      </div>
     </SidebarInset>
   </SidebarProvider>
 </template>
+
+<script lang="ts" setup>
+/**
+ * @file app/layouts/default.vue
+ * @description This file contains the default layout for the application, including the sidebar and breadcrumb navigation.
+ * @version 1.0.0
+ * @author Alessandro Pinheiro
+ * @license MIT
+ */
+
+</script>

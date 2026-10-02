@@ -15,7 +15,7 @@
 
   // ── Formatter por linguagem ───────────────────────────────
   "[vue]": { "editor.defaultFormatter": "Vue.volar" },
-  "[typescript]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[typescript]": { "editor.defaultFormatter": "vscode.typescript-language-features" },
   "[javascript]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
   "[json]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
   "[jsonc]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
