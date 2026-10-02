@@ -22,7 +22,7 @@ export default defineNuxtConfig({
     },
   },
 
-  modules: ["shadcn-nuxt", '@nuxt/eslint', 'shadcn-nuxt'],
+  modules: ["shadcn-nuxt", '@nuxt/eslint', 'shadcn-nuxt', "@nuxtjs/supabase"],
 
   shadcn: {
     /**

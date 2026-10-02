@@ -14,6 +14,8 @@ import { loginSchema } from '~~/shared/schemas/login.schema'
 import { toTypedSchema } from '@vee-validate/zod'
 import { toast } from 'vue-sonner'
 
+const supabase = useSupabaseClient()
+
 const { handleSubmit } = useForm({
   validationSchema: toTypedSchema(loginSchema),
   initialValues: {
@@ -22,9 +24,22 @@ const { handleSubmit } = useForm({
   },
 })
 
-const onSubmit = handleSubmit((data) => {
+const onSubmit = handleSubmit(async (data) => {
   toast('You submitted the following values:', {
     description: h('pre', { class: 'bg-code text-code-foreground mt-2 w-[320px] overflow-x-auto rounded-md p-4' }, h('code', JSON.stringify(data, null, 2))),
+    position: 'bottom-right',
+    class: 'flex flex-col gap-2',
+    style: {
+      '--border-radius': 'calc(var(--radius)  + 4px)',
+    },
+  })
+  const { data: user, error } = await supabase.auth.signInWithPassword({
+    email: data.email,
+    password: data.password,
+  })
+
+  toast('Login successful!', {
+    description: h('pre', { class: 'bg-code text-code-foreground mt-2 w-[320px] overflow-x-auto rounded-md p-4' }, h('code', JSON.stringify(user, null, 2))),
     position: 'bottom-right',
     class: 'flex flex-col gap-2',
     style: {

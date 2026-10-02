@@ -89,5 +89,5 @@
     "*.ts": "$(capture).d.ts",
     "*.vue": "$(capture).spec.ts, $(capture).test.ts"
   },
-  "cSpell.words": ["sonner"]
+  "cSpell.words": ["sonner", "supabase", "Supabase"]
 }
