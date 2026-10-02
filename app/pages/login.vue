@@ -1,4 +1,10 @@
 <script setup lang="ts">
+/**
+ * @file app/pages/login.vue
+ * @description This is the login page for the application. It uses VeeValidate for form
+ */
+
+
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -14,6 +20,10 @@ import { loginSchema } from '~~/shared/schemas/login.schema'
 import { toTypedSchema } from '@vee-validate/zod'
 import { toast } from 'vue-sonner'
 
+definePageMeta({
+  layout: 'no-sidebar',
+})
+
 const supabase = useSupabaseClient()
 
 const { handleSubmit } = useForm({
@@ -25,27 +35,20 @@ const { handleSubmit } = useForm({
 })
 
 const onSubmit = handleSubmit(async (data) => {
-  toast('You submitted the following values:', {
-    description: h('pre', { class: 'bg-code text-code-foreground mt-2 w-[320px] overflow-x-auto rounded-md p-4' }, h('code', JSON.stringify(data, null, 2))),
-    position: 'bottom-right',
-    class: 'flex flex-col gap-2',
-    style: {
-      '--border-radius': 'calc(var(--radius)  + 4px)',
-    },
-  })
-  const { data: user, error } = await supabase.auth.signInWithPassword({
+
+  const { error } = await supabase.auth.signInWithPassword({
     email: data.email,
     password: data.password,
   })
 
-  toast('Login successful!', {
-    description: h('pre', { class: 'bg-code text-code-foreground mt-2 w-[320px] overflow-x-auto rounded-md p-4' }, h('code', JSON.stringify(user, null, 2))),
-    position: 'bottom-right',
-    class: 'flex flex-col gap-2',
-    style: {
-      '--border-radius': 'calc(var(--radius)  + 4px)',
-    },
-  })
+  if (error) {
+    console.error('Error logging in:', error)
+    toast.error('Error logging in: ' + error.message)
+    return
+  }
+
+  await navigateTo('/')
+
 })
 </script>
 
