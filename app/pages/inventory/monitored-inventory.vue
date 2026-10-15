@@ -3,6 +3,7 @@ import { PlusCircle } from '@lucide/vue'
 import { onMounted, ref } from 'vue'
 import { columns, type Payment } from '~/components/monitored-inventory/columns'
 import DataTable from '~/components/monitored-inventory/data-table.vue'
+import ResponsiveModal from '~/components/ResponsiveModal.vue'
 
 const data = ref<Payment[]>([])
 
@@ -30,10 +31,17 @@ onMounted(async () => {
       <h1 class="text-2xl font-bold">
         Monitoramento de Estoque
       </h1>
-      <Button>
-        <PlusCircle />
-        Adicionar Produto
-      </Button>
+      <ResponsiveModal title="Adicionar Produto" description="Adicione um novo produto ao monitoramento.">
+        <template #trigger>
+          <Button>
+            <PlusCircle />
+            Adicionar Produto
+          </Button>
+        </template>
+
+        teste
+      </ResponsiveModal>
+
     </div>
 
     <div class="container mx-auto">
