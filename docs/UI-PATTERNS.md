@@ -11,8 +11,8 @@ Use `@tanstack/vue-table` e os componentes de tabela existentes. Registre explic
 ### Escolha de colunas visíveis
 
 - Disponibilize um menu "Colunas" junto à tabela usando `DropdownMenuCheckboxItem`.
-- Liste apenas colunas com `getCanHide()` e vincule o estado a `getIsVisible()` e
-  `toggleVisibility()`.
+- Liste apenas colunas com `getCanHide()` e vincule `model-value` a `getIsVisible()` e
+  `update:model-value` a `toggleVisibility()`. O componente Reka UI usa `modelValue`, não `checked`.
 - Marque colunas essenciais ou de ações com `enableHiding: false`.
 - Use `getVisibleLeafColumns().length` para o `colspan` de estados vazios.
 - Mantenha a ordenação nos cabeçalhos interativos e indique a direção atual com ícones e

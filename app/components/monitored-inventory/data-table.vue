@@ -62,8 +62,10 @@ const table = useTable({
             <DropdownMenuCheckboxItem
               v-for="column in table.getAllLeafColumns().filter((column) => column.getCanHide())"
               :key="column.id"
-              :checked="column.getIsVisible()"
-              @update:checked="(visible: boolean) => column.toggleVisibility(visible)"
+              :model-value="column.getIsVisible()"
+              @update:model-value="
+                (visible: boolean | 'indeterminate') => column.toggleVisibility(visible === true)
+              "
             >
               {{
                 typeof column.columnDef.header === 'string' ? column.columnDef.header : column.id
