@@ -95,7 +95,7 @@ fgr-webservice/
 ├── docs/                           # Documentação técnica e de arquitetura
 │   ├── ARCHITECTURE.md             # Arquitetura, fluxo de dados e Mermaid
 │   ├── INTEGRATIONS-AND-CRONS.md   # Especificação de webhooks, crons e scripts
-│   └── PITFALLS.md                 # Armadilhas conhecidas e problemas mapeados
+│   ├── PITFALLS.md                 # Armadilhas conhecidas e problemas mapeados
 │   └── UI-PATTERNS.md               # Padrões de interação e componentes da interface
 ├── public/                         # Arquivos públicos e scripts estáticos injetáveis
 │   └── track-shipping-request.js   # Script para captura de frete e disparo GA4
