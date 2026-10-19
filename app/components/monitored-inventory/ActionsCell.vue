@@ -1,8 +1,17 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { toast } from 'vue-sonner'
-import { RefreshCw, Trash2 } from '@lucide/vue'
+import { MoreHorizontal, RefreshCw, Trash2 } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import type { Database, StockMonitor } from '~~/shared/types/database.types'
 
 const props = defineProps<{
@@ -76,26 +85,38 @@ async function deleteMonitor() {
 
 <template>
   <div class="flex items-center justify-end gap-1.5">
-    <Button
-      variant="outline"
-      size="sm"
-      :disabled="isChecking || isDeleting || !monitor.is_active"
-      title="Verificar Estoque Agora"
-      @click="checkNow"
-    >
-      <RefreshCw class="size-3.5" :class="{ 'animate-spin': isChecking }" />
-      <span class="hidden sm:inline">Verificar</span>
-    </Button>
-
-    <Button
-      variant="ghost"
-      size="icon-sm"
-      :disabled="isChecking || isDeleting"
-      title="Excluir monitoramento"
-      class="text-muted-foreground hover:text-destructive"
-      @click="deleteMonitor"
-    >
-      <Trash2 class="size-4" />
-    </Button>
+    <DropdownMenu>
+      <DropdownMenuTrigger as-child>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          :disabled="isChecking || isDeleting"
+          aria-label="Ações do produto"
+        >
+          <MoreHorizontal data-icon="inline-start" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuLabel>Ações do produto</DropdownMenuLabel>
+        <DropdownMenuGroup>
+          <DropdownMenuItem
+            :disabled="isChecking || isDeleting || !monitor.is_active"
+            @select="checkNow"
+          >
+            <RefreshCw data-icon="inline-start" :class="{ 'animate-spin': isChecking }" />
+            Verificar estoque
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            variant="destructive"
+            :disabled="isChecking || isDeleting"
+            @select="deleteMonitor"
+          >
+            <Trash2 data-icon="inline-start" />
+            Excluir monitoramento
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   </div>
 </template>

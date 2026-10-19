@@ -242,6 +242,7 @@ A versão 9 do TanStack Table introduziu o registro granular de funcionalidades 
 4. **NUNCA** instancie o `useTable` com features implícitas ou fora do objeto `features` para não quebrar a compilação ou o suporte de tipos.
 5. **Visibilidade das colunas:** permita escolher as colunas visíveis usando `columnVisibilityFeature` e o menu documentado em [`docs/UI-PATTERNS.md`](./docs/UI-PATTERNS.md). Colunas essenciais ou de ações podem desabilitar ocultação explicitamente.
 6. **Cópia de identificadores:** quando SKU ou outro identificador exibido na tabela puder ser copiado, torne o valor um botão acessível e confirme sucesso ou falha com toast, conforme [`docs/UI-PATTERNS.md`](./docs/UI-PATTERNS.md).
+7. **Ações de linha:** agrupe as ações de cada linha em um `DropdownMenu` com gatilho acessível, itens dentro de `DropdownMenuGroup` e variantes adequadas para ações destrutivas, conforme [`docs/UI-PATTERNS.md`](./docs/UI-PATTERNS.md).
 
 ---
 
