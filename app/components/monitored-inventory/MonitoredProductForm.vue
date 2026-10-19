@@ -8,6 +8,7 @@ import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field
 import { Input } from '@/components/ui/input'
 import { createMonitoredInventorySchema } from '~~/shared/schemas/inventory-monitoring.schema'
 import type { Database } from '~~/shared/types/database.types'
+import { parseMinQuantityInput } from '~~/shared/utils/inventory-monitoring'
 
 const emit = defineEmits<{
   (e: 'saved' | 'cancel'): void
@@ -139,6 +140,11 @@ const onSubmit = handleSubmit(async (values) => {
     isSubmitting.value = false
   }
 })
+
+function updateMinQuantity(value: string | number) {
+  const quantity = parseMinQuantityInput(value)
+  if (quantity !== undefined) setFieldValue('min_quantity', quantity)
+}
 </script>
 
 <template>
@@ -234,6 +240,7 @@ const onSubmit = handleSubmit(async (values) => {
             v-bind="componentField"
             placeholder="5"
             :aria-invalid="!!errors.length"
+            @update:model-value="updateMinQuantity"
           />
           <p class="text-xs text-muted-foreground">
             Quando o estoque disponível for menor ou igual a esse valor, o alerta no Discord será

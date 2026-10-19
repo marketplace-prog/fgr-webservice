@@ -59,6 +59,7 @@ Valores extraídos diretamente de [package.json](file:///c:/Users/marke/OneDrive
 | `bun run postinstall`  | Executa `nuxt prepare` para gerar tipos do Nuxt      |
 | `bun run lint`         | Executa a verificação do ESLint                      |
 | `bun run lint:fix`     | Corrige problemas automáticos de lint                |
+| `bun run test`         | Executa a suíte de testes automatizados com Bun      |
 | `bun run format`       | Formata o código com o Prettier                      |
 | `bun run format:check` | Valida se todos os arquivos estão formatados         |
 | `bun run typecheck`    | Executa a verificação estrita de tipos via `vue-tsc` |
@@ -305,6 +306,8 @@ As variáveis necessárias estão registradas no [.env.example](file:///c:/Users
 ### DO (Faça)
 
 - ✅ Execute sempre `bun run typecheck` e `bun run lint` antes de concluir uma tarefa.
+- ✅ Toda feature nova ou alteração de comportamento deve incluir testes automatizados que cubram o comportamento esperado e as regressões relevantes. Prefira testes unitários para lógica isolada e testes de integração para fluxos entre componentes ou serviços.
+- ✅ Execute `bun run test` e mantenha os testes próximos ao código correspondente com o sufixo `.test.ts`.
 - ✅ Utilize `shared/` para qualquer tipo, schema ou utilitário consumido tanto pelo Nuxt quanto pelo Nitro.
 - ✅ Trate payloads de webhook prevendo tanto formato direto `{ ... }` quanto envelopado `{ payload: { ... } }`.
 - ✅ Trate datas da Magazord com `parseMagazordDate()` para corrigir offsets de timezone incompletos (ex: `-03` para `-03:00`).
@@ -325,6 +328,7 @@ As variáveis necessárias estão registradas no [.env.example](file:///c:/Users
 ## 12. Checklist Obrigatório Antes de Finalizar Qualquer Tarefa
 
 - [ ] Código escrito com `<script setup lang="ts">` e tipagem estrita (sem `any` implícito).
+- [ ] Testes automatizados adicionados para cada feature ou alteração de comportamento e executados com `bun run test`.
 - [ ] Nenhum `console.log` deixado no código.
 - [ ] `bun run typecheck` executado sem erros.
 - [ ] `bun run lint` e `bun run format:check` executados com sucesso.

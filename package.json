@@ -10,6 +10,7 @@
     "postinstall": "nuxt prepare",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "test": "bun test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "nuxt typecheck"
@@ -37,6 +38,7 @@
   "devDependencies": {
     "@nuxt/eslint": "^1.17.0",
     "@tailwindcss/vite": "^4.3.3",
+    "@types/bun": "^1.4.3",
     "eslint": "^10.11.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.6",

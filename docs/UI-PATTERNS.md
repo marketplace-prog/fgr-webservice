@@ -3,6 +3,14 @@
 Este documento registra interações reutilizáveis da interface administrativa. Ao introduzir
 comportamentos equivalentes em outra tela, reutilize as primitivas existentes e mantenha o padrão.
 
+## Testes de features
+
+- Toda feature nova ou alteração de comportamento deve incluir testes automatizados para o
+  comportamento esperado e para regressões relevantes.
+- Teste lógica isolada unitariamente e fluxos entre componentes/serviços por testes de integração.
+- Mantenha os testes próximos ao código correspondente, com o sufixo `.test.ts`, e execute
+  `bun run test` antes de concluir a alteração.
+
 ## Tabelas TanStack
 
 Use `@tanstack/vue-table` e os componentes de tabela existentes. Registre explicitamente em
