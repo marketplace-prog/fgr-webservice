@@ -9,6 +9,7 @@
 
 import type { ColumnDef } from '@tanstack/vue-table'
 import { FlexRender, useTable } from '@tanstack/vue-table'
+import { ArrowDown, ArrowDownUp, ArrowUp } from '@lucide/vue'
 
 import {
   Table,
@@ -18,6 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { Button } from '@/components/ui/button'
 import { features, type DataTableFeatures } from './features'
 
 const props = defineProps<{
@@ -41,8 +43,34 @@ const table = useTable({
     <Table>
       <TableHeader>
         <TableRow v-for="headerGroup in table.getHeaderGroups()" :key="headerGroup.id">
-          <TableHead v-for="header in headerGroup.headers" :key="header.id">
-            <FlexRender v-if="!header.isPlaceholder" :header="header" />
+          <TableHead
+            v-for="header in headerGroup.headers"
+            :key="header.id"
+            :aria-sort="
+              header.column.getIsSorted() === 'asc'
+                ? 'ascending'
+                : header.column.getIsSorted() === 'desc'
+                  ? 'descending'
+                  : undefined
+            "
+          >
+            <template v-if="!header.isPlaceholder && header.column.getCanSort()">
+              <Button
+                variant="ghost"
+                size="sm"
+                class="-ml-3"
+                @click="header.column.getToggleSortingHandler()?.($event)"
+              >
+                <FlexRender :header="header" />
+                <ArrowUp v-if="header.column.getIsSorted() === 'asc'" data-icon="inline-end" />
+                <ArrowDown
+                  v-else-if="header.column.getIsSorted() === 'desc'"
+                  data-icon="inline-end"
+                />
+                <ArrowDownUp v-else data-icon="inline-end" />
+              </Button>
+            </template>
+            <FlexRender v-else-if="!header.isPlaceholder" :header="header" />
           </TableHead>
         </TableRow>
       </TableHeader>
