@@ -73,14 +73,18 @@ const onSubmit = handleSubmit(async (values) => {
   isSubmitting.value = true
 
   try {
-    const { error } = await supabase.from('stock_monitors').insert({
-      sku: values.sku.trim(),
-      name: values.name.trim(),
-      sku_type: values.sku_type,
-      min_quantity: values.min_quantity,
-      is_active: values.is_active,
-      created_by: user.value?.id ?? null,
-    })
+    const { data: monitor, error } = await supabase
+      .from('stock_monitors')
+      .insert({
+        sku: values.sku.trim(),
+        name: values.name.trim(),
+        sku_type: values.sku_type,
+        min_quantity: values.min_quantity,
+        is_active: values.is_active,
+        created_by: user.value?.id ?? null,
+      })
+      .select('id')
+      .single()
 
     if (error) {
       if (error.code === '23505') {
@@ -93,7 +97,39 @@ const onSubmit = handleSubmit(async (values) => {
       return
     }
 
-    toast.success(`SKU "${values.sku}" cadastrado com sucesso no monitoramento!`)
+    if (!monitor) {
+      toast.error(
+        'Cadastro concluído, mas não foi possível obter o ID para verificar o estoque. Atualize a lista.',
+      )
+      resetForm()
+      emit('saved')
+      return
+    }
+
+    try {
+      const result = await $fetch<{ stock: number; alerted: boolean }>(
+        '/api/inventory/check-single',
+        {
+          method: 'POST',
+          body: { id: monitor.id },
+        },
+      )
+
+      if (result.alerted) {
+        toast.warning(
+          `SKU "${values.sku}" cadastrado. Estoque atual: ${result.stock} un. (mínimo: ${values.min_quantity}).`,
+        )
+      } else {
+        toast.success(`SKU "${values.sku}" cadastrado e estoque verificado: ${result.stock} un.`)
+      }
+    } catch (err: unknown) {
+      console.error('Erro ao verificar estoque após cadastrar produto:', err)
+      const message = err instanceof Error ? err.message : 'Falha na requisição'
+      toast.error(
+        `SKU "${values.sku}" cadastrado, mas não foi possível verificar o estoque: ${message}`,
+      )
+    }
+
     resetForm()
     emit('saved')
   } catch (err: unknown) {

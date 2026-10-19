@@ -35,6 +35,7 @@ const props = defineProps<{
   title?: string
   description?: string
   open?: boolean
+  showDefaultFooter?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -58,6 +59,8 @@ const Modal = computed(() => ({
   Footer: isDesktop.value ? DialogFooter : DrawerFooter,
   Close: isDesktop.value ? DialogClose : DrawerClose,
 }))
+
+const showDefaultFooter = computed(() => props.showDefaultFooter ?? true)
 </script>
 
 <template>
@@ -89,9 +92,9 @@ const Modal = computed(() => ({
       </div>
 
       <!-- SLOT: Rodapé (Opcional, possui botão de fechar por padrão) -->
-      <component :is="Modal.Footer" class="pt-4">
+      <component :is="Modal.Footer" v-if="$slots.footer || showDefaultFooter" class="pt-4">
         <slot name="footer">
-          <component :is="Modal.Close" as-child>
+          <component :is="Modal.Close" v-if="showDefaultFooter" as-child>
             <Button variant="outline"> Fechar </Button>
           </component>
         </slot>

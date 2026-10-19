@@ -50,9 +50,9 @@ const filteredMonitors = computed(() => {
 
 const columns = computed(() => getColumns(fetchMonitors))
 
-function onProductSaved() {
+async function onProductSaved() {
   isModalOpen.value = false
-  fetchMonitors()
+  await fetchMonitors()
 }
 
 onMounted(() => {
@@ -88,6 +88,7 @@ onMounted(() => {
           v-model:open="isModalOpen"
           title="Cadastrar SKU para Monitoramento"
           description="Informe os dados do produto para que o sistema alerte quando o estoque disponível atingir o limite."
+          :show-default-footer="false"
         >
           <template #trigger>
             <Button size="sm">
