@@ -127,7 +127,7 @@ fgr-webservice/
 ├── nuxt.config.ts                  # Configuração global do Nuxt 4
 ├── package.json                    # Dependências e scripts do projeto
 ├── tsconfig.json                   # Configuração base de TypeScript
-└── vercel.json                     # Agendamento de crons na Vercel
+└── vercel.json                     # Cron de estoque diário às 07:00 BRT (10:00 UTC)
 ```
 
 > [!NOTE]

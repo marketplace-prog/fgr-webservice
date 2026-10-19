@@ -6,14 +6,14 @@
 
 ## 1. Tabela Resumo das Integrações
 
-| Nome / Recurso                   | Rota / Arquivo                     | Método | Chamador                       | Autenticação                               | Efeito Colateral                                |
-| :------------------------------- | :--------------------------------- | :----- | :----------------------------- | :----------------------------------------- | :---------------------------------------------- |
-| **Novo Pedido Magazord**         | `/api/webhook/pedido-registrado`   | `POST` | Magazord Webhook Engine        | Aberta _(TODO: confirmar segredo)_         | Embed Discord (`DISCORD_WEBHOOK_NOVOS_PEDIDOS`) |
-| **Atualização de Pedido**        | `/api/webhook/pedido-alterado`     | `POST` | Magazord Webhook Engine        | Aberta _(TODO: confirmar segredo)_         | Embed Discord (`DISCORD_WEBHOOK_ATUALIZACOES`)  |
-| **Checagem de Estoque (Cron)**   | `/api/cron/check-stock`            | `GET`  | Vercel Cron (`0 * * * *`)      | Bearer Token _(TODO: validar CRON_SECRET)_ | Embed Discord (`DISCORD_WEBHOOK_ESTOQUE_BAIXO`) |
-| **Verificar Estoque Agora**      | `/api/inventory/check-single`      | `POST` | Painel Web (Autenticado)       | Cookie / Sessão Supabase                   | Atualiza linha e alerta Discord se $\le$ mínimo |
-| **Health Check**                 | `/api/health`                      | `GET`  | Monitoramento externo / Uptime | Nenhuma (Pública)                          | Retorna `{ status: 'ok', time }`                |
-| **Rastreio de Frete Storefront** | `public/track-shipping-request.js` | N/A    | Script no browser do cliente   | Nenhuma                                    | Evento `calculate_shipping` no GA4 dataLayer    |
+| Nome / Recurso                   | Rota / Arquivo                     | Método | Chamador                              | Autenticação                               | Efeito Colateral                                |
+| :------------------------------- | :--------------------------------- | :----- | :------------------------------------ | :----------------------------------------- | :---------------------------------------------- |
+| **Novo Pedido Magazord**         | `/api/webhook/pedido-registrado`   | `POST` | Magazord Webhook Engine               | Aberta _(TODO: confirmar segredo)_         | Embed Discord (`DISCORD_WEBHOOK_NOVOS_PEDIDOS`) |
+| **Atualização de Pedido**        | `/api/webhook/pedido-alterado`     | `POST` | Magazord Webhook Engine               | Aberta _(TODO: confirmar segredo)_         | Embed Discord (`DISCORD_WEBHOOK_ATUALIZACOES`)  |
+| **Checagem de Estoque (Cron)**   | `/api/cron/check-stock`            | `GET`  | Vercel Cron (`0 10 * * *`, 07:00 BRT) | Bearer Token _(TODO: validar CRON_SECRET)_ | Embed Discord (`DISCORD_WEBHOOK_ESTOQUE_BAIXO`) |
+| **Verificar Estoque Agora**      | `/api/inventory/check-single`      | `POST` | Painel Web (Autenticado)              | Cookie / Sessão Supabase                   | Atualiza linha e alerta Discord se $\le$ mínimo |
+| **Health Check**                 | `/api/health`                      | `GET`  | Monitoramento externo / Uptime        | Nenhuma (Pública)                          | Retorna `{ status: 'ok', time }`                |
+| **Rastreio de Frete Storefront** | `public/track-shipping-request.js` | N/A    | Script no browser do cliente          | Nenhuma                                    | Evento `calculate_shipping` no GA4 dataLayer    |
 
 ---
 
@@ -149,7 +149,7 @@ curl -X POST http://localhost:3000/api/webhook/pedido-alterado \
 
 - **Arquivo fonte oficial:** [`server/api/cron/check-stock.get.ts`](file:///c:/Users/marke/OneDrive/Desktop/ale/fgr-webservice/server/api/cron/check-stock.get.ts) (com re-export de compatibilidade em `app/server/api/cron/check-stock.ts`).
 - **Rota configurada no Vercel:** `/api/cron/check-stock`
-- **Agendamento:** `0 * * * *` (a cada 1 hora, no minuto zero) definido em [vercel.json](file:///c:/Users/marke/OneDrive/Desktop/ale/fgr-webservice/vercel.json).
+- **Agendamento:** `0 10 * * *` (uma vez ao dia, às 07:00 no horário de Brasília/UTC-3; o Vercel Cron usa UTC) definido em [vercel.json](file:///c:/Users/marke/OneDrive/Desktop/ale/fgr-webservice/vercel.json).
 - **Chamador:** Vercel Cron Scheduler via requisição HTTP `GET`.
 - **Autenticação:** A Vercel envia o cabeçalho `Authorization: Bearer <CRON_SECRET>`.
   > _TODO: confirmar com o time a adição da validação do header `CRON_SECRET` para impedir que terceiros invoquem o endpoint manualmente._
