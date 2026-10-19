@@ -17,3 +17,9 @@ Use `@tanstack/vue-table` e os componentes de tabela existentes. Registre explic
 - Use `getVisibleLeafColumns().length` para o `colspan` de estados vazios.
 - Mantenha a ordenação nos cabeçalhos interativos e indique a direção atual com ícones e
   `aria-sort`.
+
+### Copiar identificadores
+
+- Exiba SKUs e identificadores copiáveis em um botão acessível, não em um elemento não interativo.
+- Copie o valor exato usando `navigator.clipboard.writeText()` apenas após a ação do usuário.
+- Dê feedback explícito via toast em sucesso e falha; registre o erro de cópia para diagnóstico.

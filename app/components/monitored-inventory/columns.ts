@@ -4,8 +4,11 @@
  */
 
 import { createColumnHelper } from '@tanstack/vue-table'
+import { Copy } from '@lucide/vue'
 import { h } from 'vue'
+import { toast } from 'vue-sonner'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import type { StockMonitor } from '~~/shared/types/database.types'
 import ActionsCell from './ActionsCell.vue'
 import ActiveSwitchCell from './ActiveSwitchCell.vue'
@@ -26,6 +29,16 @@ function formatDate(dateStr: string | null | undefined): string {
   }).format(d)
 }
 
+async function copySku(sku: string) {
+  try {
+    await navigator.clipboard.writeText(sku)
+    toast.success(`SKU "${sku}" copiado para a área de transferência.`)
+  } catch (error: unknown) {
+    console.error('Erro ao copiar SKU para a área de transferência:', error)
+    toast.error('Não foi possível copiar o SKU. Verifique as permissões do navegador.')
+  }
+}
+
 export function getColumns(onRefresh?: () => void) {
   return columnHelper.columns([
     columnHelper.accessor('sku', {
@@ -33,7 +46,19 @@ export function getColumns(onRefresh?: () => void) {
       cell: ({ row }) => {
         const isParent = row.original.sku_type === 'parent'
         return h('div', { class: 'flex flex-col gap-1' }, [
-          h('span', { class: 'font-mono font-semibold text-sm' }, row.original.sku),
+          h(
+            Button,
+            {
+              type: 'button',
+              variant: 'ghost',
+              size: 'sm',
+              class: 'h-auto w-fit px-1 py-0 font-mono font-semibold',
+              title: 'Copiar SKU',
+              'aria-label': `Copiar SKU ${row.original.sku}`,
+              onClick: () => copySku(row.original.sku),
+            },
+            { default: () => [row.original.sku, h(Copy, { 'data-icon': 'inline-end' })] },
+          ),
           h(
             Badge,
             {
