@@ -3,6 +3,7 @@ import { PlusCircle } from '@lucide/vue'
 import { onMounted, ref } from 'vue'
 import { columns, type Payment } from '~/components/monitored-inventory/columns'
 import DataTable from '~/components/monitored-inventory/data-table.vue'
+import MonitoredProductForm from '~/components/monitored-inventory/MonitoredProductForm.vue'
 import ResponsiveModal from '~/components/ResponsiveModal.vue'
 
 const data = ref<Payment[]>([])
@@ -39,7 +40,7 @@ onMounted(async () => {
           </Button>
         </template>
 
-        teste
+        <MonitoredProductForm />
       </ResponsiveModal>
 
     </div>
