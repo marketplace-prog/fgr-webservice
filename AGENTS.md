@@ -96,6 +96,7 @@ fgr-webservice/
 │   ├── ARCHITECTURE.md             # Arquitetura, fluxo de dados e Mermaid
 │   ├── INTEGRATIONS-AND-CRONS.md   # Especificação de webhooks, crons e scripts
 │   └── PITFALLS.md                 # Armadilhas conhecidas e problemas mapeados
+│   └── UI-PATTERNS.md               # Padrões de interação e componentes da interface
 ├── public/                         # Arquivos públicos e scripts estáticos injetáveis
 │   └── track-shipping-request.js   # Script para captura de frete e disparo GA4
 ├── server/                         # Backend do Nitro (APIs e Webhooks)
@@ -155,6 +156,12 @@ fgr-webservice/
   - Primitivas shadcn em `app/components/ui/`: Podem ter nomes de uma palavra (`Button.vue`, `Input.vue`), exceção liberada no ESLint.
   - Páginas e rotas: `kebab-case.vue` (ex: `monitored-inventory.vue`).
   - Handlers de API Nitro: `kebab-case.<metodo>.ts` (ex: `pedido-registrado.post.ts`, `health.get.ts`).
+
+### Documentação e commits de features
+
+- Toda feature deve atualizar a documentação correspondente em `docs/` no mesmo conjunto de mudanças.
+- Entregue cada feature em um commit próprio, com mensagem no padrão Conventional Commits e escopo claro (ex: `feat(inventory): allow choosing visible columns`).
+- Antes do commit, valide o comportamento e execute as verificações de tipo e lint do projeto.
 
 ### Auto-Imports do Nuxt
 
@@ -233,6 +240,7 @@ A versão 9 do TanStack Table introduziu o registro granular de funcionalidades 
    })
    ```
 4. **NUNCA** instancie o `useTable` com features implícitas ou fora do objeto `features` para não quebrar a compilação ou o suporte de tipos.
+5. **Visibilidade das colunas:** permita escolher as colunas visíveis usando `columnVisibilityFeature` e o menu documentado em [`docs/UI-PATTERNS.md`](./docs/UI-PATTERNS.md). Colunas essenciais ou de ações podem desabilitar ocultação explicitamente.
 
 ---
 

@@ -9,7 +9,7 @@
 
 import type { ColumnDef } from '@tanstack/vue-table'
 import { FlexRender, useTable } from '@tanstack/vue-table'
-import { ArrowDown, ArrowDownUp, ArrowUp } from '@lucide/vue'
+import { ArrowDown, ArrowDownUp, ArrowUp, Columns3 } from '@lucide/vue'
 
 import {
   Table,
@@ -20,6 +20,14 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { features, type DataTableFeatures } from './features'
 
 const props = defineProps<{
@@ -40,6 +48,31 @@ const table = useTable({
 
 <template>
   <div class="rounded-md border">
+    <div class="flex justify-end border-b p-2">
+      <DropdownMenu>
+        <DropdownMenuTrigger as-child>
+          <Button variant="outline" size="sm" aria-label="Escolher colunas visíveis">
+            <Columns3 data-icon="inline-start" />
+            Colunas
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuLabel>Colunas visíveis</DropdownMenuLabel>
+          <DropdownMenuGroup>
+            <DropdownMenuCheckboxItem
+              v-for="column in table.getAllLeafColumns().filter((column) => column.getCanHide())"
+              :key="column.id"
+              :checked="column.getIsVisible()"
+              @update:checked="(visible: boolean) => column.toggleVisibility(visible)"
+            >
+              {{
+                typeof column.columnDef.header === 'string' ? column.columnDef.header : column.id
+              }}
+            </DropdownMenuCheckboxItem>
+          </DropdownMenuGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
     <Table>
       <TableHeader>
         <TableRow v-for="headerGroup in table.getHeaderGroups()" :key="headerGroup.id">
@@ -88,7 +121,9 @@ const table = useTable({
         </template>
         <template v-else>
           <TableRow>
-            <TableCell :colspan="columns.length" class="h-24 text-center"> No results. </TableCell>
+            <TableCell :colspan="table.getVisibleLeafColumns().length" class="h-24 text-center">
+              No results.
+            </TableCell>
           </TableRow>
         </template>
       </TableBody>

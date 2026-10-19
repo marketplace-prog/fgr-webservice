@@ -126,6 +126,7 @@ export function getColumns(onRefresh?: () => void) {
 
     columnHelper.display({
       id: 'actions',
+      enableHiding: false,
       header: () => h('div', { class: 'text-right' }, 'Ações'),
       cell: ({ row }) =>
         h(ActionsCell, {
