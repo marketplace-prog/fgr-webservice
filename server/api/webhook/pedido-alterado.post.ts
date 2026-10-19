@@ -3,7 +3,7 @@
  * Endpoint Nitro (Nuxt 4) para receber atualizações de situação de pedido.
  */
 
-import type { MagazordPedidoPayload } from "~~/shared/types/magazord"
+import type { MagazordPedidoPayload } from '~~/shared/types/magazord'
 
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig(event)
@@ -18,14 +18,18 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    const rawBody = await readBody<MagazordPedidoPayload | { payload: MagazordPedidoPayload }>(event)
+    const rawBody = await readBody<MagazordPedidoPayload | { payload: MagazordPedidoPayload }>(
+      event,
+    )
     const pedido = rawBody && 'payload' in rawBody ? rawBody.payload : rawBody
 
     if (!pedido || !pedido.codigo) {
       throw createError({ statusCode: 400, message: 'Payload inválido' })
     }
 
-    console.log(`[🔄 Webhook Magazord] Atualização no pedido #${pedido.codigo} para o status: ${pedido.pedidoSituacaoDescricao}`)
+    console.log(
+      `[🔄 Webhook Magazord] Atualização no pedido #${pedido.codigo} para o status: ${pedido.pedidoSituacaoDescricao}`,
+    )
 
     // Dados limpos do cliente
     const primeiroNome = getFirstName(pedido.pessoaNome) // Utilizando a util global
@@ -35,7 +39,7 @@ export default defineEventHandler(async (event) => {
     // Lógica para capturar informações de Logística/Rastreio (caso existam)
     const rastreioInfo = pedido.arrayPedidoRastreio?.[0]
     let rastreioTexto = 'Ainda não despachado'
-    
+
     if (rastreioInfo?.codigoRastreio) {
       if (rastreioInfo.link) {
         rastreioTexto = `[📦 **${rastreioInfo.codigoRastreio}**](${rastreioInfo.link}) (${rastreioInfo.transportadoraNome})`
@@ -56,7 +60,9 @@ export default defineEventHandler(async (event) => {
           fields: [
             {
               name: '📊 Novo Status',
-              value: truncate(`**${pedido.pedidoSituacaoDescricaoDetalhada || pedido.pedidoSituacaoDescricao}**`),
+              value: truncate(
+                `**${pedido.pedidoSituacaoDescricaoDetalhada || pedido.pedidoSituacaoDescricao}**`,
+              ),
               inline: false,
             },
             {
@@ -68,7 +74,7 @@ export default defineEventHandler(async (event) => {
               name: '💰 Valor Total',
               value: truncate(`**${formatCurrency(pedido.valorTotalFinal ?? pedido.valorTotal)}**`),
               inline: true,
-            }
+            },
           ],
           timestamp: parseMagazordDate(pedido.dataHora).toISOString(),
           footer: { text: 'Integração Magazord • Status Update' },
@@ -82,15 +88,17 @@ export default defineEventHandler(async (event) => {
       body: discordPayload,
     })
 
-    return { success: true, message: `Atualização do pedido #${pedido.codigo} encaminhada com sucesso.` }
-
-  } catch (error: any) {
-    if (error.__nuxt_error) {
+    return {
+      success: true,
+      message: `Atualização do pedido #${pedido.codigo} encaminhada com sucesso.`,
+    }
+  } catch (error: unknown) {
+    if (error && typeof error === 'object' && '__nuxt_error' in error) {
       throw error
     }
 
-    console.error('🔥 Erro ao encaminhar atualização para o Discord:', error.data || error.message || error)
-    
+    console.error('🔥 Erro ao encaminhar atualização para o Discord:', error)
+
     throw createError({
       statusCode: 502,
       statusMessage: 'Discord Integration Error',

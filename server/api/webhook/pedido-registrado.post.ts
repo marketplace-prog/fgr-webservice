@@ -4,29 +4,34 @@
  * processar os dados para gerar insights de negócio e encaminhar uma notificação formatada para o Discord.
  */
 
-import type {
-  MagazordPedidoItem,
-  MagazordPedidoPayload,
-} from "~~/shared/types/magazord"
+import type { MagazordPedidoItem, MagazordPedidoPayload } from '~~/shared/types/magazord'
 
 /**
  * Analisa variáveis da venda (como frete cobrado vs. frete real, cupons, ticket do carrinho)
  * e gera um resumo estratégico com anomalias e indicadores de sucesso.
- * 
+ *
  * @param pedido - O objeto principal contendo informações financeiras da venda.
  * @param itens - Array de produtos da compra, útil para analisar o volume do carrinho.
  * @param freteCusto - Custo da etiqueta logística retornado na aba de rastreio.
  * @returns Uma string unificada pronta para ser renderizada no Discord contendo todos os alertas acionados.
  */
-const generateInsights = (pedido: MagazordPedidoPayload, itens: MagazordPedidoItem[], freteCusto: number): string => {
+const generateInsights = (
+  pedido: MagazordPedidoPayload,
+  itens: MagazordPedidoItem[],
+  freteCusto: number,
+): string => {
   const insights: string[] = []
 
   // Análise de Viabilidade do Frete
   const freteCliente = Number(pedido.valorFrete || 0)
   if (freteCliente === 0 && freteCusto > 0) {
-    insights.push(`📦 **Subsídio:** Frete Grátis ativado. Loja absorveu custo de **${formatCurrency(freteCusto)}**.`)
+    insights.push(
+      `📦 **Subsídio:** Frete Grátis ativado. Loja absorveu custo de **${formatCurrency(freteCusto)}**.`,
+    )
   } else if (freteCliente < freteCusto) {
-    insights.push(`⚠️ **Frete Deficitário:** O envio custará ${formatCurrency(freteCusto)}, mas o cliente pagou apenas ${formatCurrency(freteCliente)} (Defasagem de ${formatCurrency(freteCusto - freteCliente)}).`)
+    insights.push(
+      `⚠️ **Frete Deficitário:** O envio custará ${formatCurrency(freteCusto)}, mas o cliente pagou apenas ${formatCurrency(freteCliente)} (Defasagem de ${formatCurrency(freteCusto - freteCliente)}).`,
+    )
   }
 
   // Análise de Descontos e Cupons
@@ -35,7 +40,9 @@ const generateInsights = (pedido: MagazordPedidoPayload, itens: MagazordPedidoIt
   if (desconto > 0 && valorProdutos > 0) {
     const percentualDesconto = ((desconto / valorProdutos) * 100).toFixed(1)
     if (Number(percentualDesconto) > 15) {
-      insights.push(`🚨 **Desconto Agressivo:** Redução de ${percentualDesconto}% no pedido (${formatCurrency(desconto)} off).`)
+      insights.push(
+        `🚨 **Desconto Agressivo:** Redução de ${percentualDesconto}% no pedido (${formatCurrency(desconto)} off).`,
+      )
     }
   }
 
@@ -46,7 +53,9 @@ const generateInsights = (pedido: MagazordPedidoPayload, itens: MagazordPedidoIt
   // Análise de Volume de Carrinho (Cross-Sell)
   const qtdTotalItens = itens.reduce((acc, item) => acc + (item.quantidade || 1), 0)
   if (qtdTotalItens === 1) {
-    insights.push(`🛒 **Carrinho Único:** Cliente comprou apenas 1 item. Oportunidade para cross-sell.`)
+    insights.push(
+      `🛒 **Carrinho Único:** Cliente comprou apenas 1 item. Oportunidade para cross-sell.`,
+    )
   } else if (qtdTotalItens >= 4) {
     insights.push(`🔥 **Ótimo Ticket:** Carrinho robusto com ${qtdTotalItens} itens adicionados.`)
   }
@@ -56,11 +65,15 @@ const generateInsights = (pedido: MagazordPedidoPayload, itens: MagazordPedidoIt
   if (formaPagamento.includes('PIX')) {
     insights.push(`⚡ **Liquidez Imediata:** Pagamento via PIX.`)
   } else if (pedido.condicaoPagamentoParcelas >= 6) {
-    insights.push(`⏳ **Longo Prazo:** Compra em ${pedido.condicaoPagamentoParcelas}x. Atenção ao custo de antecipação do caixa.`)
+    insights.push(
+      `⏳ **Longo Prazo:** Compra em ${pedido.condicaoPagamentoParcelas}x. Atenção ao custo de antecipação do caixa.`,
+    )
   }
 
   // Se nenhum alerta especial for ativado
-  return insights.length > 0 ? insights.join('\n\n') : '✅ Pedido saudável, nenhuma anomalia de margem detectada.'
+  return insights.length > 0
+    ? insights.join('\n\n')
+    : '✅ Pedido saudável, nenhuma anomalia de margem detectada.'
 }
 
 /**
@@ -80,11 +93,16 @@ export default defineEventHandler(async (event) => {
 
   try {
     // Tenta ler o body mapeando tanto para o root direto do json quanto para envelopamentos '{ payload: {...} }'
-    const rawBody = await readBody<MagazordPedidoPayload | { payload: MagazordPedidoPayload }>(event)
+    const rawBody = await readBody<MagazordPedidoPayload | { payload: MagazordPedidoPayload }>(
+      event,
+    )
     const pedido = rawBody && 'payload' in rawBody ? rawBody.payload : rawBody
 
     if (!pedido || !pedido.codigo) {
-      throw createError({ statusCode: 400, message: 'Payload do webhook inválido ou sem código do pedido' })
+      throw createError({
+        statusCode: 400,
+        message: 'Payload do webhook inválido ou sem código do pedido',
+      })
     }
 
     console.log(`[📦 Webhook Magazord] Processando pedido #${pedido.codigo}`)
@@ -92,10 +110,13 @@ export default defineEventHandler(async (event) => {
     // --- Extração de Itens e Rastreio ---
     const rastreioInfo = pedido.arrayPedidoRastreio?.[0]
     const itensRastreio: MagazordPedidoItem[] = rastreioInfo?.pedidoItem || []
-    
+
     const itensList = itensRastreio.length
       ? itensRastreio
-          .map((item) => `• **${item.quantidade}x** ${item.produtoNome || item.descricao || 'Item genérico'} (${formatCurrency(item.valorItem ?? item.valorUnitario)})`)
+          .map(
+            (item) =>
+              `• **${item.quantidade}x** ${item.produtoNome || item.descricao || 'Item genérico'} (${formatCurrency(item.valorItem ?? item.valorUnitario)})`,
+          )
           .join('\n')
       : 'Itens não detalhados neste webhook'
 
@@ -121,7 +142,10 @@ export default defineEventHandler(async (event) => {
       avatar_url: 'https://cdn-icons-png.flaticon.com/512/3144/3144456.png',
       embeds: [
         {
-          title: truncate(`📦 Pedido #${pedido.codigo} | ${pedido.pedidoSituacaoDescricao}`.toUpperCase(), 256),
+          title: truncate(
+            `📦 Pedido #${pedido.codigo} | ${pedido.pedidoSituacaoDescricao}`.toUpperCase(),
+            256,
+          ),
           description: truncate(canalVenda, 4096),
           color: corDiscord,
           fields: [
@@ -132,7 +156,9 @@ export default defineEventHandler(async (event) => {
             },
             {
               name: '💳 Pagamento',
-              value: truncate(`${pedido.formaPagamentoNome || 'N/A'}${pedido.condicaoPagamentoNome ? ` - ${pedido.condicaoPagamentoNome}` : ''}`),
+              value: truncate(
+                `${pedido.formaPagamentoNome || 'N/A'}${pedido.condicaoPagamentoNome ? ` - ${pedido.condicaoPagamentoNome}` : ''}`,
+              ),
               inline: true,
             },
             {
@@ -147,7 +173,9 @@ export default defineEventHandler(async (event) => {
             },
             {
               name: '💰 Fechamento',
-              value: truncate(`**Produtos:** ${formatCurrency(pedido.valorProduto)}\n**Frete (Cliente):** ${formatCurrency(pedido.valorFrete)}\n**Descontos:** ${formatCurrency(pedido.valorDesconto)}\n**Total Pago:** **${formatCurrency(pedido.valorTotalFinal ?? pedido.valorTotal)}**`),
+              value: truncate(
+                `**Produtos:** ${formatCurrency(pedido.valorProduto)}\n**Frete (Cliente):** ${formatCurrency(pedido.valorFrete)}\n**Descontos:** ${formatCurrency(pedido.valorDesconto)}\n**Total Pago:** **${formatCurrency(pedido.valorTotalFinal ?? pedido.valorTotal)}**`,
+              ),
               inline: true,
             },
             {
@@ -169,16 +197,18 @@ export default defineEventHandler(async (event) => {
       body: discordPayload,
     })
 
-    return { success: true, message: `Webhook do pedido #${pedido.codigo} encaminhado com sucesso.` }
-
-  } catch (error: any) {
+    return {
+      success: true,
+      message: `Webhook do pedido #${pedido.codigo} encaminhado com sucesso.`,
+    }
+  } catch (error: unknown) {
     // Permite que erros gerados pelo "createError" (ex: falta de runtime config ou payload mal formado) cheguem limpos ao client.
-    if (error.__nuxt_error) {
+    if (error && typeof error === 'object' && '__nuxt_error' in error) {
       throw error
     }
 
-    console.error('🔥 Erro ao encaminhar webhook para o Discord:', error.data || error.message || error)
-    
+    console.error('🔥 Erro ao encaminhar webhook para o Discord:', error)
+
     throw createError({
       statusCode: 502,
       statusMessage: 'Discord Integration Error',

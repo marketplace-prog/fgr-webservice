@@ -4,7 +4,6 @@
  * @description This is the login page for the application. It uses VeeValidate for form
  */
 
-
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -35,7 +34,6 @@ const { handleSubmit } = useForm({
   },
 })
 
-
 const isLoading = ref(false)
 
 const onSubmit = handleSubmit(async (data) => {
@@ -54,35 +52,32 @@ const onSubmit = handleSubmit(async (data) => {
   }
 
   await navigateTo('/')
-
 })
 </script>
 
 <template>
-  <div class="flex w-full h-screen items-center justify-center">
-
+  <div class="flex h-screen w-full items-center justify-center">
     <Card class="w-full max-w-sm">
-      <form id="login-form" @submit="onSubmit" class="flex flex-col gap-5">
-
+      <form id="login-form" class="flex flex-col gap-5" @submit="onSubmit">
         <CardHeader>
           <CardTitle>Entre na sua conta</CardTitle>
-          <CardDescription>
-            Digite seu email e senha para acessar sua conta.
-          </CardDescription>
+          <CardDescription> Digite seu email e senha para acessar sua conta. </CardDescription>
         </CardHeader>
 
         <CardContent>
           <FieldGroup>
-
             <div class="grid w-full items-center gap-4">
               <div class="flex flex-col space-y-1.5">
                 <VeeField v-slot="{ componentField, errors }" name="email">
                   <Field :data-invalid="!!errors.length">
-                    <FieldLabel for="email">
-                      Email
-                    </FieldLabel>
-                    <Input id="email" v-bind="componentField" placeholder="Digite seu email" autocomplete="off"
-                      :aria-invalid="!!errors.length" />
+                    <FieldLabel for="email"> Email </FieldLabel>
+                    <Input
+                      id="email"
+                      v-bind="componentField"
+                      placeholder="Digite seu email"
+                      autocomplete="off"
+                      :aria-invalid="!!errors.length"
+                    />
                     <FieldError v-if="errors.length" :errors="errors" />
                   </Field>
                 </VeeField>
@@ -92,21 +87,22 @@ const onSubmit = handleSubmit(async (data) => {
                 <div class="flex items-center">
                   <VeeField v-slot="{ componentField, errors }" name="password">
                     <Field :data-invalid="!!errors.length">
-                      <FieldLabel for="password">
-                        Senha
-                      </FieldLabel>
-                      <Input id="password" v-bind="componentField" type="password" placeholder="Sua senha"
-                        autocomplete="off" :aria-invalid="!!errors.length" />
+                      <FieldLabel for="password"> Senha </FieldLabel>
+                      <Input
+                        id="password"
+                        v-bind="componentField"
+                        type="password"
+                        placeholder="Sua senha"
+                        autocomplete="off"
+                        :aria-invalid="!!errors.length"
+                      />
                       <FieldError v-if="errors.length" :errors="errors" />
                     </Field>
-
                   </VeeField>
-
                 </div>
               </div>
             </div>
           </FieldGroup>
-
         </CardContent>
 
         <CardFooter class="flex flex-col gap-2">
@@ -119,8 +115,6 @@ const onSubmit = handleSubmit(async (data) => {
           </Button>
         </CardFooter>
       </form>
-
     </Card>
   </div>
-
 </template>

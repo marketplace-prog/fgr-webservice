@@ -1,4 +1,4 @@
-<script setup lang="ts" generic="TData">
+<script setup lang="ts" generic="TData extends import('@tanstack/vue-table').RowData">
 /**
  * @file app/components/monitored-inventory/data-table.vue
  * @description This file contains the data table component for the monitored inventory, using @tanstack/vue-table.
@@ -27,13 +27,17 @@ const props = defineProps<{
 
 const table = useTable({
   features,
-  get data() { return props.data },
-  get columns() { return props.columns },
+  get data() {
+    return props.data
+  },
+  get columns() {
+    return props.columns
+  },
 })
 </script>
 
 <template>
-  <div class="border rounded-md">
+  <div class="rounded-md border">
     <Table>
       <TableHeader>
         <TableRow v-for="headerGroup in table.getHeaderGroups()" :key="headerGroup.id">
@@ -44,8 +48,11 @@ const table = useTable({
       </TableHeader>
       <TableBody>
         <template v-if="table.getRowModel().rows?.length">
-          <TableRow v-for="row in table.getRowModel().rows" :key="row.id"
-            :data-state="row.getIsSelected() && 'selected'">
+          <TableRow
+            v-for="row in table.getRowModel().rows"
+            :key="row.id"
+            :data-state="row.getIsSelected() && 'selected'"
+          >
             <TableCell v-for="cell in row.getVisibleCells()" :key="cell.id">
               <FlexRender :cell="cell" />
             </TableCell>
@@ -53,9 +60,7 @@ const table = useTable({
         </template>
         <template v-else>
           <TableRow>
-            <TableCell :colspan="columns.length" class="h-24 text-center">
-              No results.
-            </TableCell>
+            <TableCell :colspan="columns.length" class="h-24 text-center"> No results. </TableCell>
           </TableRow>
         </template>
       </TableBody>

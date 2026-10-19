@@ -10,7 +10,8 @@
 | :------------------------------- | :--------------------------------- | :----- | :----------------------------- | :----------------------------------------- | :---------------------------------------------- |
 | **Novo Pedido Magazord**         | `/api/webhook/pedido-registrado`   | `POST` | Magazord Webhook Engine        | Aberta _(TODO: confirmar segredo)_         | Embed Discord (`DISCORD_WEBHOOK_NOVOS_PEDIDOS`) |
 | **Atualização de Pedido**        | `/api/webhook/pedido-alterado`     | `POST` | Magazord Webhook Engine        | Aberta _(TODO: confirmar segredo)_         | Embed Discord (`DISCORD_WEBHOOK_ATUALIZACOES`)  |
-| **Checagem de Estoque**          | `/api/cron/check-stock`            | `GET`  | Vercel Cron (`0 * * * *`)      | Bearer Token _(TODO: validar CRON_SECRET)_ | Alerta Discord do monitor cadastrado            |
+| **Checagem de Estoque (Cron)**   | `/api/cron/check-stock`            | `GET`  | Vercel Cron (`0 * * * *`)      | Bearer Token _(TODO: validar CRON_SECRET)_ | Embed Discord (`DISCORD_WEBHOOK_ESTOQUE_BAIXO`) |
+| **Verificar Estoque Agora**      | `/api/inventory/check-single`      | `POST` | Painel Web (Autenticado)       | Cookie / Sessão Supabase                   | Atualiza linha e alerta Discord se $\le$ mínimo |
 | **Health Check**                 | `/api/health`                      | `GET`  | Monitoramento externo / Uptime | Nenhuma (Pública)                          | Retorna `{ status: 'ok', time }`                |
 | **Rastreio de Frete Storefront** | `public/track-shipping-request.js` | N/A    | Script no browser do cliente   | Nenhuma                                    | Evento `calculate_shipping` no GA4 dataLayer    |
 
@@ -146,14 +147,13 @@ curl -X POST http://localhost:3000/api/webhook/pedido-alterado \
 
 ## 4. Cron Job: Verificação de Estoque Mínimo (`check-stock`)
 
-- **Arquivo fonte atual:** [`app/server/api/cron/check-stock.ts`](file:///c:/Users/marke/OneDrive/Desktop/ale/fgr-webservice/app/server/api/cron/check-stock.ts)
+- **Arquivo fonte oficial:** [`server/api/cron/check-stock.get.ts`](file:///c:/Users/marke/OneDrive/Desktop/ale/fgr-webservice/server/api/cron/check-stock.get.ts) (com re-export de compatibilidade em `app/server/api/cron/check-stock.ts`).
 - **Rota configurada no Vercel:** `/api/cron/check-stock`
-  > [!WARNING]
-  > **Divergência de Caminho:** No Nuxt 4, as rotas do Nitro residem em `server/api/`. O arquivo atual foi criado em `app/server/api/cron/check-stock.ts`. Para ser resolvido em `/api/cron/check-stock` pela Vercel, o arquivo deve residir na raiz em `server/api/cron/check-stock.ts`. Consulte [docs/PITFALLS.md](file:///c:/Users/marke/OneDrive/Desktop/ale/fgr-webservice/docs/PITFALLS.md).
 - **Agendamento:** `0 * * * *` (a cada 1 hora, no minuto zero) definido em [vercel.json](file:///c:/Users/marke/OneDrive/Desktop/ale/fgr-webservice/vercel.json).
 - **Chamador:** Vercel Cron Scheduler via requisição HTTP `GET`.
 - **Autenticação:** A Vercel envia o cabeçalho `Authorization: Bearer <CRON_SECRET>`.
   > _TODO: confirmar com o time a adição da validação do header `CRON_SECRET` para impedir que terceiros invoquem o endpoint manualmente._
+- **Webhook de Destino:** `DISCORD_WEBHOOK_ESTOQUE_BAIXO` (configurado em `runtimeConfig.discord.estoque_baixo`).
 
 ### Fluxo de Execução
 
@@ -167,19 +167,31 @@ curl -X POST http://localhost:3000/api/webhook/pedido-alterado \
        .eq('is_active', true)
      ```
 2. **Consulta de Estoque Real no Magazord:**
-   - Para cada monitor, invoca `fetchMagazordStock(monitor.sku)`.
-   - _Status atual no código:_ Função mock retornando valor estático `5` _(TODO: integrar com endpoint de estoque oficial da API Magazord)_.
+   - Para cada monitor, invoca [`processMonitorCheck()`](file:///c:/Users/marke/OneDrive/Desktop/ale/fgr-webservice/server/utils/stock-service.ts) que consulta [`fetchMagazordStock(monitor.sku, monitor.sku_type)`](file:///c:/Users/marke/OneDrive/Desktop/ale/fgr-webservice/server/utils/stock-service.ts).
+   - Consulta `GET /api/v1/listEstoque`, filtrando por `produto` para variação e `produtoPai` para produto pai (`sku_type`).
+   - Soma `quantidadeDisponivelVenda` de todas as páginas (até 100 itens por chamada) para obter o saldo disponível total.
+   - A chamada usa HTTP Basic Auth com Base64 de `token:senha` e exige HTTPS; falhas de configuração ou consulta não são substituídas por valores simulados.
+   - Referência: [Documentação Magazord — Consulta de Estoque](https://docs.api.magazord.com.br/api/list-estoque/).
 3. **Avaliação da Condição e Alerta:**
-   - Se `currentStock !== null && currentStock <= monitor.min_quantity`, dispara `sendDiscordAlert()`.
-   - Notifica via POST com embed vermelho para a URL de webhook específica cadastrada no monitor (`monitor.discord_webhook_url`).
+   - Se `currentStock <= monitor.min_quantity`, dispara [`sendStockDiscordAlert()`](file:///c:/Users/marke/OneDrive/Desktop/ale/fgr-webservice/server/utils/stock-service.ts).
+   - Atualiza `current_stock`, `last_checked_at` e `last_alerted_at` no Supabase.
 
-### Timeout e Limites da Vercel
+### Verificação Sob Demanda no Painel Web
 
-- Planos Hobby da Vercel possuem limite estrito de **10 segundos** de execução para Serverless Functions (planos Pro possuem 60s a 300s).
-- **Risco:** O código atual itera os monitores com um loop sequencial `for (const monitor of monitors)`. Se o número de SKUs cadastrados crescer, a soma dos tempos de chamada HTTP à API Magazord estourará o timeout da Vercel.
-- **Recomendação futura:** Processamento em lotes com `Promise.allSettled` ou paginação via query param `?cursor=...`.
+- **Endpoint:** `POST /api/inventory/check-single` ([`server/api/inventory/check-single.post.ts`](file:///c:/Users/marke/OneDrive/Desktop/ale/fgr-webservice/server/api/inventory/check-single.post.ts))
+- Permite que o operador force a checagem imediata de um SKU no painel clicando em "Verificar", disparando o alerta no Discord se o estoque estiver baixo e atualizando a linha da tabela em tempo real sem esperar o próximo ciclo do cron.
 
 ---
+
+### Busca do Nome do Produto por SKU
+
+- **Endpoint:** `GET /api/inventory/product-by-sku`
+- **Autenticação:** Sessão ativa do Supabase.
+- **Credenciais:** `MAGAZORD_API_URL`, `MAGAZORD_API_TOKEN` e `MAGAZORD_API_PASSWORD`, mantidas exclusivamente no servidor.
+- **Autorização Magazord:** Todas as chamadas REST devem enviar `Authorization: Basic ${base64(token + ':' + senha)}` e usar HTTPS. O cabeçalho é gerado no servidor e nunca deve ser registrado em logs.
+- **Consulta de variação:** `/v3/produtos/derivacao/{sku}/detail`.
+- **Consulta de produto pai:** `/v2/site/produto/{codigoProduto}`.
+- A resposta fornece o nome obtido diretamente da Magazord para o formulário de novo monitoramento. SKUs inexistentes retornam `404`; falhas de autenticação e comunicação com a API são expostas como erros sem retornar credenciais ao cliente.
 
 ## 5. Rastreamento de Frete no E-commerce (Storefront)
 
@@ -193,15 +205,15 @@ curl -X POST http://localhost:3000/api/webhook/pedido-alterado \
   5. Realiza o push para o `dataLayer` do Google Analytics 4 com o evento estruturado `calculate_shipping`:
      ```js
      window.dataLayer.push({
-       'event': 'calculate_shipping',
-       'shipping_cost': menorValor,
-       'currency': 'BRL',
-       'postal_code': cepFinal,
-       'sku': skuProduto,
-       'product_name': nomeProduto,
-       'product_category': categoriaProduto,
-       'product_price': precoProduto,
-       'carrier': transportadora,
-       'delivery_days': prazoDias
-     });
+       event: 'calculate_shipping',
+       shipping_cost: menorValor,
+       currency: 'BRL',
+       postal_code: cepFinal,
+       sku: skuProduto,
+       product_name: nomeProduto,
+       product_category: categoriaProduto,
+       product_price: precoProduto,
+       carrier: transportadora,
+       delivery_days: prazoDias,
+     })
      ```

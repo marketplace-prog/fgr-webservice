@@ -75,7 +75,9 @@
 - **Como evitar:**
   - Mantenha sempre o padrão defensivo já implementado:
     ```ts
-    const rawBody = await readBody<MagazordPedidoPayload | { payload: MagazordPedidoPayload }>(event)
+    const rawBody = await readBody<MagazordPedidoPayload | { payload: MagazordPedidoPayload }>(
+      event,
+    )
     const pedido = rawBody && 'payload' in rawBody ? rawBody.payload : rawBody
     ```
 
@@ -123,4 +125,3 @@
 - **Armadilha:** O módulo `@nuxtjs/supabase` procura por padrão os tipos de banco gerados em `~/types/database.types.ts` (ou seja, `app/types/database.types.ts` no Nuxt 4), enquanto o ESLint ignora `shared/types/database.types.ts`.
 - **Impacto:** Warning no build/typecheck: `[@nuxt/supabase] WARN Database types configured at "~/types/database.types.ts" but file not found`.
 - **Como evitar:** Configure explicitamente `supabase.types` no `nuxt.config.ts` apontando para `~~/shared/types/database.types.ts` ou gere o arquivo no local padrão.
-

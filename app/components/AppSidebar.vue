@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { SidebarProps } from "@/components/ui/sidebar"
+import type { SidebarProps } from '@/components/ui/sidebar'
 
 import {
   BookOpen,
@@ -12,12 +12,12 @@ import {
   Send,
   Settings2,
   SquareTerminal,
-} from "@lucide/vue"
+} from '@lucide/vue'
 
-import NavMain from "@/components/NavMain.vue"
-import NavProjects from "@/components/NavProjects.vue"
-import NavSecondary from "@/components/NavSecondary.vue"
-import NavUser from "@/components/NavUser.vue"
+import NavMain from '@/components/NavMain.vue'
+import NavProjects from '@/components/NavProjects.vue'
+import NavSecondary from '@/components/NavSecondary.vue'
+import NavUser from '@/components/NavUser.vue'
 import {
   Sidebar,
   SidebarContent,
@@ -26,25 +26,24 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar"
+} from '@/components/ui/sidebar'
 
 const props = withDefaults(defineProps<SidebarProps>(), {
-  variant: "inset",
+  variant: 'inset',
 })
 
 const user = useSupabaseUser()
 
-
 const data = {
   user: {
-    name: "FGR Sports",
-    email: user.value?.email ?? "@fgrsports.com.br",
-    avatar: "https://placekitten.com/200/200",
+    name: 'FGR Sports',
+    email: user.value?.email ?? '@fgrsports.com.br',
+    avatar: 'https://placekitten.com/200/200',
   },
   navMain: [
     {
-      title: "Estoque",
-      url: "/inventory/monitored-inventory",
+      title: 'Estoque',
+      url: '/inventory/monitored-inventory',
       icon: SquareTerminal,
       isActive: true,
       // items: [
@@ -130,13 +129,13 @@ const data = {
   ],
   navSecondary: [
     {
-      title: "Support",
-      url: "#",
+      title: 'Support',
+      url: '#',
       icon: LifeBuoy,
     },
     {
-      title: "Feedback",
-      url: "#",
+      title: 'Feedback',
+      url: '#',
       icon: Send,
     },
   ],
@@ -168,13 +167,12 @@ const data = {
           <SidebarMenuButton size="lg" as-child>
             <a href="#">
               <div
-                class="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                class="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground"
+              >
                 <Command class="size-4" />
               </div>
               <div class="grid flex-1 text-left text-sm leading-tight">
-                <span class="truncate font-medium">
-                  FGR Sports
-                </span>
+                <span class="truncate font-medium"> FGR Sports </span>
                 <span class="truncate text-xs"> v0.0.1</span>
               </div>
             </a>

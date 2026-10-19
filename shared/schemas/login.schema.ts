@@ -4,9 +4,9 @@
  * @author Alessandro Pinheiro <
  */
 
-import { z } from "zod";
+import { z } from 'zod'
 
 export const loginSchema = z.object({
-    email: z.email("Por favor, insira um email válido."),
-    password: z.string().min(6, "A senha deve ter pelo menos 6 caracteres.")
-});
+  email: z.email('Por favor, insira um email válido.'),
+  password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres.'),
+})

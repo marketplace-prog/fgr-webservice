@@ -13,7 +13,7 @@ export enum MagazordOrigemPedido {
   /** Pedido gerado e importado através de integrações de Marketplace (Mercado Livre, Shopee, etc.) */
   MARKETPLACE = 2,
   /** Pedido inserido manualmente no painel administrativo (Backoffice/Televendas) */
-  MANUAL = 3
+  MANUAL = 3,
 }
 
 /**
@@ -37,7 +37,7 @@ export enum MagazordPessoaTipo {
   /** Pessoa Física (CPF) */
   FISICA = 1,
   /** Pessoa Jurídica (CNPJ) */
-  JURIDICA = 2
+  JURIDICA = 2,
 }
 
 /**
@@ -51,7 +51,7 @@ export enum MagazordFormaPagamento {
   /** Pagamento via Cartão de Crédito - Bandeira Visa */
   CARTAO_VISA = 3,
   /** Pagamento via Cartão de Crédito - Bandeira Diners */
-  CARTAO_DINERS = 4
+  CARTAO_DINERS = 4,
 }
 
 /**
@@ -231,7 +231,7 @@ export interface MagazordPedidoPayload {
   dataHora: string
   /** Indica por qual plataforma o pedido foi gerado (Site, Marketplace ou Manual) */
   origem: MagazordOrigemPedido | number
-  
+
   // --- Valores e Totalizadores ---
   /** Somatório do valor original de todos os produtos do pedido */
   valorProduto: string
@@ -253,7 +253,7 @@ export interface MagazordPedidoPayload {
   creditoUtilizado: string | null
   /** Montante abatido usando saldo de campanhas de cashback ativas */
   cashbackUtilizado: string | null
-  
+
   // --- Situação ---
   /** Código numérico que define em que fase o pedido se encontra */
   pedidoSituacao: MagazordPedidoSituacao | number
@@ -265,7 +265,7 @@ export interface MagazordPedidoPayload {
   pedidoSituacaoDescricao: string
   /** Texto extenso detalhando a situação para exibição no painel do cliente */
   pedidoSituacaoDescricaoDetalhada: string
-  
+
   // --- Dados do Cliente ---
   /** ID único do cadastro do cliente/comprador no banco de dados da loja */
   pessoaId: number
@@ -285,7 +285,7 @@ export interface MagazordPedidoPayload {
   pessoaContato: MagazordPessoaContato[]
   /** Nome da pessoa que vai receber o pacote (pode ser diferente do comprador) */
   nomeDestinatario: string
-  
+
   // --- Endereço de Entrega ---
   /** Rua, Avenida, Travessa, etc. do local de entrega */
   logradouro: string
@@ -303,7 +303,7 @@ export interface MagazordPedidoPayload {
   paisNome: string | null
   /** Código de Endereçamento Postal (CEP) do destino */
   cep: string
-  
+
   // --- Pagamento ---
   /** ID identificador do método de pagamento usado (1 = Boleto, 2 = Mastercard, etc.) */
   formaPagamentoId: MagazordFormaPagamento | number
@@ -329,7 +329,7 @@ export interface MagazordPedidoPayload {
   pedidoPagamentoAme: unknown | null
   /** URL gerada pelo gateway de pagamento para conclusão de pagamentos externos/redirecionamento */
   linkPagamento: string | null
-  
+
   // --- Marketplace ---
   /** ID interno do Hub/Marketplace (ex: Mercado Livre, B2W, Amazon) se o pedido veio de lá */
   marketplaceId: number | null
@@ -347,14 +347,14 @@ export interface MagazordPedidoPayload {
   lojaMarketplaceId: number | null
   /** Nome associado à loja no ecossistema do Marketplace */
   lojaMarketplaceNome: string | null
-  
-  /** 
+
+  /**
    * String serializada em JSON contendo metadados visuais, ícones ou flags de configuração enviadas pelo marketplace.
    * @example '{"icone":"marketplace-meli.svg"}'
    * Nota: É necessário realizar `JSON.parse()` antes de acessar as propriedades.
    */
   lojaMarketplaceOpcoes: string | null
-  
+
   // --- Marketing, Cupons e Tracking ---
   /** Código promocional digitado pelo cliente no carrinho, se houver */
   cupomCodigo: string | null
@@ -374,7 +374,7 @@ export interface MagazordPedidoPayload {
   pedidoTrackingCountryCode: string | null
   /** Dados brutos dos pixels de conversão disparados neste pedido */
   pedidoTrackingConversion: string | null
-  
+
   // --- Meta Dados Adicionais ---
   /** Endereço de IP público capturado no momento do fechamento da compra (medida antifraude) */
   pedidoIp: string | null
@@ -396,7 +396,7 @@ export interface MagazordPedidoPayload {
   mostraProcessos: boolean
   /** Flag interna de monitoramento ativa (ex: sinalização de atendimento prioritário ou suporte) */
   monitoraPedido: boolean
-  
+
   // --- Arrays Filhos ---
   /** Array de pacotes logísticos (rastreios). Um pedido pode ser particionado em múltiplos rastreios caso saia de CDs diferentes. */
   arrayPedidoRastreio: MagazordPedidoRastreio[]
@@ -404,10 +404,10 @@ export interface MagazordPedidoPayload {
   pedidoHistorico: MagazordPedidoHistorico[]
 }
 
-/** 
+/**
  * Envelopamento Padrão de Webhook
- * 
- * Dependendo do endpoint registrado e da versão da configuração no Magazord, 
+ *
+ * Dependendo do endpoint registrado e da versão da configuração no Magazord,
  * o JSON pode enviar os dados do pedido dentro de uma propriedade raiz nomeada como `payload`.
  */
 export interface MagazordPedidoWebhookEnvelope {

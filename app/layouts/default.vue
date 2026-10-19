@@ -7,7 +7,7 @@
  * @license MIT
  */
 
-import AppSidebar from "@/components/AppSidebar.vue"
+import AppSidebar from '@/components/AppSidebar.vue'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -15,13 +15,9 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
-import { Separator } from "@/components/ui/separator"
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar"
+} from '@/components/ui/breadcrumb'
+import { Separator } from '@/components/ui/separator'
+import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 </script>
 
 <template>
@@ -35,9 +31,7 @@ import {
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem class="hidden md:block">
-                <BreadcrumbLink href="#">
-                  Building Your Application
-                </BreadcrumbLink>
+                <BreadcrumbLink href="#"> Building Your Application </BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator class="hidden md:block" />
               <BreadcrumbItem>

@@ -3,7 +3,7 @@ import prettierRecommended from 'eslint-plugin-prettier/recommended'
 import withNuxt from './.nuxt/eslint.config.mjs'
 
 export default withNuxt(
-  { ignores: ['shared/types/database.types.ts'] },
+  { ignores: ['shared/types/database.types.ts', 'eslint.config.mjs'] },
   {
     rules: {
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],

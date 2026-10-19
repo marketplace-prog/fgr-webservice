@@ -6,6 +6,6 @@
   "tabWidth": 2,
   "endOfLine": "lf",
   "plugins": ["prettier-plugin-tailwindcss"],
-  "tailwindStylesheet": "./app/assets/css/main.css",
+  "tailwindStylesheet": "./app/assets/css/tailwind.css",
   "tailwindFunctions": ["cn", "cva", "clsx"]
 }

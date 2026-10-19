@@ -1,11 +1,6 @@
 <script setup lang="ts">
-import type { LucideIcon } from "@lucide/vue"
-import {
-  Folder,
-  Forward,
-  MoreHorizontal,
-  Trash2,
-} from "@lucide/vue"
+import type { LucideIcon } from '@lucide/vue'
+import { Folder, Forward, MoreHorizontal, Trash2 } from '@lucide/vue'
 
 import {
   DropdownMenu,
@@ -13,7 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from '@/components/ui/dropdown-menu'
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -22,7 +17,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from "@/components/ui/sidebar"
+} from '@/components/ui/sidebar'
 
 defineProps<{
   projects: {
@@ -53,8 +48,11 @@ const { isMobile } = useSidebar()
               <span class="sr-only">More</span>
             </SidebarMenuAction>
           </DropdownMenuTrigger>
-          <DropdownMenuContent class="w-48 rounded-lg" :side="isMobile ? 'bottom' : 'right'"
-            :align="isMobile ? 'end' : 'start'">
+          <DropdownMenuContent
+            class="w-48 rounded-lg"
+            :side="isMobile ? 'bottom' : 'right'"
+            :align="isMobile ? 'end' : 'start'"
+          >
             <DropdownMenuItem>
               <Folder class="text-muted-foreground" />
               <span>View Project</span>

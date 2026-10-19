@@ -99,15 +99,26 @@ fgr-webservice/
 ├── public/                         # Arquivos públicos e scripts estáticos injetáveis
 │   └── track-shipping-request.js   # Script para captura de frete e disparo GA4
 ├── server/                         # Backend do Nitro (APIs e Webhooks)
-│   └── api/
-│       ├── health.get.ts           # Health check endpoint
-│       └── webhook/
-│           ├── pedido-registrado.post.ts  # Webhook novo pedido Magazord
-│           └── pedido-alterado.post.ts    # Webhook atualização pedido Magazord
+│   ├── api/
+│   │   ├── cron/
+│   │   │   └── check-stock.get.ts  # Rota oficial Vercel Cron de verificação de estoque
+│   │   ├── health.get.ts           # Health check endpoint
+│   │   ├── inventory/
+│   │   │   ├── check-single.post.ts# Verificação sob demanda de estoque de um SKU
+│   │   │   └── product-by-sku.get.ts# Consulta do nome de produto na API Magazord
+│   │   └── webhook/
+│   │       ├── pedido-registrado.post.ts  # Webhook novo pedido Magazord
+│   │       └── pedido-alterado.post.ts    # Webhook atualização pedido Magazord
+│   └── utils/
+│       ├── magazord-api.ts         # URL HTTPS e autenticação Basic compartilhadas da Magazord
+│       └── stock-service.ts        # Serviço de consulta de estoque e alertas Discord
 ├── shared/                         # Código compartilhado (auto-importado no app e server)
 │   ├── schemas/                    # Schemas Zod de validação (inventory, login)
 │   ├── types/                      # Tipagens TypeScript (magazord.ts, database.types.ts)
 │   └── utils/                      # Funções utilitárias puras (magazord.ts)
+├── supabase/                       # Migrações e esquemas do Supabase
+│   └── migrations/
+│       └── 20261019_create_stock_monitors.sql # Tabela stock_monitors com RLS
 ├── .editorconfig                   # Configurações de charset, tabs e line-ending (LF)
 ├── .env.example                    # Exemplo de variáveis de ambiente necessárias
 ├── .prettierrc                     # Regras Prettier (sem ponto e vírgula, aspas simples)
@@ -149,6 +160,10 @@ fgr-webservice/
 
 - Nuxt auto-importa composables do Vue (`ref`, `computed`, `watch`, `onMounted`), do Nuxt (`useRuntimeConfig`, `navigateTo`, `definePageMeta`), do Nitro (`defineEventHandler`, `readBody`, `createError`, `$fetch`), do Supabase (`useSupabaseClient`, `useSupabaseUser`) e utilitários em `shared/utils/`.
 - **NÃO** importe manualmente o que o Nuxt já provê globalmente.
+
+### Erros HTTP no Nitro
+
+- Ao usar `createError()`, coloque mensagens descritivas em `message`, não em `statusMessage`. O H3 pode sanitizar `statusMessage`; reserve-o para rótulos curtos e seguros quando necessário.
 
 ### ESLint e Prettier
 
@@ -209,8 +224,12 @@ A versão 9 do TanStack Table introduziu o registro granular de funcionalidades 
 
    const table = useTable({
      features,
-     get data() { return props.data },
-     get columns() { return props.columns },
+     get data() {
+       return props.data
+     },
+     get columns() {
+       return props.columns
+     },
    })
    ```
 4. **NUNCA** instancie o `useTable` com features implícitas ou fora do objeto `features` para não quebrar a compilação ou o suporte de tipos.
@@ -263,6 +282,10 @@ As variáveis necessárias estão registradas no [.env.example](file:///c:/Users
 | `SUPABASE_SERVICE_KEY`          | Privado/Server | Chave Service Role para bypass de RLS em rotas internas                     |
 | `DISCORD_WEBHOOK_NOVOS_PEDIDOS` | Privado/Server | Webhook do Discord para avisos de novas vendas                              |
 | `DISCORD_WEBHOOK_ATUALIZACOES`  | Privado/Server | Webhook do Discord para avisos de alteração de situação                     |
+| `DISCORD_WEBHOOK_ESTOQUE_BAIXO` | Privado/Server | Webhook do Discord para canal de alertas de estoque baixo                   |
+| `MAGAZORD_API_URL`              | Privado/Server | URL base HTTPS da API Magazord (ex: `https://loja.com.br/api`)              |
+| `MAGAZORD_API_TOKEN`            | Privado/Server | Token da API Magazord usado no HTTP Basic Auth                              |
+| `MAGAZORD_API_PASSWORD`         | Privado/Server | Senha da API Magazord usada no HTTP Basic Auth                              |
 | `CRON_SECRET`                   | Privado/Server | _TODO: confirmar com o time_ — Token para proteger a rota do cron da Vercel |
 
 ---
@@ -275,6 +298,7 @@ As variáveis necessárias estão registradas no [.env.example](file:///c:/Users
 - ✅ Utilize `shared/` para qualquer tipo, schema ou utilitário consumido tanto pelo Nuxt quanto pelo Nitro.
 - ✅ Trate payloads de webhook prevendo tanto formato direto `{ ... }` quanto envelopado `{ payload: { ... } }`.
 - ✅ Trate datas da Magazord com `parseMagazordDate()` para corrigir offsets de timezone incompletos (ex: `-03` para `-03:00`).
+- ✅ Autentique todas as chamadas REST à Magazord com `Authorization: Basic ${base64(token + ':' + senha)}` e use exclusivamente HTTPS. Mantenha token e senha em variáveis privadas do servidor; nunca registre o header ou as credenciais em logs.
 - ✅ Trunque campos de embeds do Discord usando `truncate()` para nunca estourar o limite de 1024 caracteres da API.
 
 ### DON'T (Não Faça)

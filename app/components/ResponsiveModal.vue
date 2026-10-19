@@ -7,7 +7,7 @@
  * @license MIT
  */
 
-import { useMediaQuery } from '@vueuse/core'
+import { useMediaQuery, useVModel } from '@vueuse/core'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -31,10 +31,20 @@ import {
 } from '@/components/ui/drawer'
 
 // Permite que o componente pai passe o título e descrição
-defineProps<{
+const props = defineProps<{
   title?: string
   description?: string
+  open?: boolean
 }>()
+
+const emit = defineEmits<{
+  (e: 'update:open', value: boolean): void
+}>()
+
+const isOpen = useVModel(props, 'open', emit, {
+  passive: true,
+  defaultValue: false,
+})
 
 const isDesktop = useMediaQuery('(min-width: 640px)')
 
@@ -48,22 +58,21 @@ const Modal = computed(() => ({
   Footer: isDesktop.value ? DialogFooter : DrawerFooter,
   Close: isDesktop.value ? DialogClose : DrawerClose,
 }))
-
-const open = ref(false)
 </script>
 
 <template>
-  <component :is="Modal.Root" v-model:open="open">
-
+  <component :is="Modal.Root" v-model:open="isOpen">
     <!-- SLOT: Botão/Gatilho -->
     <!-- O `as-child` delega o clique e atributos para o componente que o pai enviar -->
     <component :is="Modal.Trigger" as-child>
       <slot name="trigger" />
     </component>
 
-    <component :is="Modal.Content" class="sm:max-w-md" :class="[
-      { 'px-2 pb-8 *:px-4': !isDesktop },
-    ]">
+    <component
+      :is="Modal.Content"
+      class="sm:max-w-md"
+      :class="[{ 'px-2 pb-8 *:px-4': !isDesktop }]"
+    >
       <component :is="Modal.Header">
         <component :is="Modal.Title">
           <!-- Pode usar a prop "title" ou passar um slot para um título customizado -->
@@ -83,13 +92,10 @@ const open = ref(false)
       <component :is="Modal.Footer" class="pt-4">
         <slot name="footer">
           <component :is="Modal.Close" as-child>
-            <Button variant="outline">
-              Fechar
-            </Button>
+            <Button variant="outline"> Fechar </Button>
           </component>
         </slot>
       </component>
-
     </component>
   </component>
 </template>

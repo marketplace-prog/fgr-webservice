@@ -2,121 +2,225 @@
 import { toTypedSchema } from '@vee-validate/zod'
 import { useForm, Field as VeeField } from 'vee-validate'
 import { toast } from 'vue-sonner'
-import { z } from 'zod'
-
+import { Loader } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import {
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from '@/components/ui/field'
+import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupText,
-  InputGroupTextarea,
-} from '@/components/ui/input-group'
+import { createMonitoredInventorySchema } from '~~/shared/schemas/inventory-monitoring.schema'
+import type { Database } from '~~/shared/types/database.types'
 
-const formSchema = toTypedSchema(
-  z.object({
-    title: z
-      .string()
-      .min(5, 'Bug title must be at least 5 characters.')
-      .max(32, 'Bug title must be at most 32 characters.'),
-    description: z
-      .string()
-      .min(20, 'Description must be at least 20 characters.')
-      .max(100, 'Description must be at most 100 characters.'),
-  }),
-)
+const emit = defineEmits<{
+  (e: 'saved' | 'cancel'): void
+}>()
 
-const { handleSubmit, resetForm } = useForm({
-  validationSchema: formSchema,
+const supabase = useSupabaseClient<Database>()
+const user = useSupabaseUser()
+const isSubmitting = ref(false)
+const isLookingUpProduct = ref(false)
+const productLookupError = ref('')
+
+const { handleSubmit, resetForm, values, setFieldValue } = useForm({
+  validationSchema: toTypedSchema(createMonitoredInventorySchema),
   initialValues: {
-    title: '',
-    description: '',
+    sku: '',
+    name: '',
+    sku_type: 'variation',
+    min_quantity: 5,
+    is_active: true,
   },
 })
 
-const onSubmit = handleSubmit((data) => {
-  toast('You submitted the following values:', {
-    description: h('pre', { class: 'bg-code text-code-foreground mt-2 w-[320px] overflow-x-auto rounded-md p-4' }, h('code', JSON.stringify(data, null, 2))),
-    position: 'bottom-right',
-    class: 'flex flex-col gap-2',
-    style: {
-      '--border-radius': 'calc(var(--radius)  + 4px)',
-    },
-  })
+watch([() => values.sku, () => values.sku_type], ([sku, skuType], _previous, onCleanup) => {
+  const normalizedSku = sku?.trim() ?? ''
+  const isCurrentLookup = () => values.sku?.trim() === normalizedSku && values.sku_type === skuType
+  productLookupError.value = ''
+  setFieldValue('name', '')
+
+  if (!normalizedSku) {
+    isLookingUpProduct.value = false
+    return
+  }
+
+  isLookingUpProduct.value = true
+  const timeout = setTimeout(async () => {
+    try {
+      const product = await $fetch<{ name: string }>('/api/inventory/product-by-sku', {
+        query: { sku: normalizedSku, sku_type: skuType },
+      })
+      if (isCurrentLookup()) {
+        setFieldValue('name', product.name)
+      }
+    } catch (error: unknown) {
+      if (!isCurrentLookup()) return
+
+      const status =
+        typeof error === 'object' && error !== null && 'statusCode' in error
+          ? error.statusCode
+          : undefined
+      productLookupError.value =
+        status === 404
+          ? 'SKU não encontrado na Magazord.'
+          : 'Não foi possível consultar o produto na Magazord.'
+    } finally {
+      if (isCurrentLookup()) isLookingUpProduct.value = false
+    }
+  }, 400)
+
+  onCleanup(() => clearTimeout(timeout))
+})
+
+const onSubmit = handleSubmit(async (values) => {
+  isSubmitting.value = true
+
+  try {
+    const { error } = await supabase.from('stock_monitors').insert({
+      sku: values.sku.trim(),
+      name: values.name.trim(),
+      sku_type: values.sku_type,
+      min_quantity: values.min_quantity,
+      is_active: values.is_active,
+      created_by: user.value?.id ?? null,
+    })
+
+    if (error) {
+      if (error.code === '23505') {
+        toast.error(
+          `O SKU "${values.sku}" já está cadastrado como ${values.sku_type === 'parent' ? 'Produto Pai' : 'Variação'}.`,
+        )
+      } else {
+        toast.error(`Erro ao cadastrar produto: ${error.message}`)
+      }
+      return
+    }
+
+    toast.success(`SKU "${values.sku}" cadastrado com sucesso no monitoramento!`)
+    resetForm()
+    emit('saved')
+  } catch (err: unknown) {
+    console.error('Erro ao cadastrar produto monitorado:', err)
+    toast.error('Ocorreu um erro inesperado ao salvar.')
+  } finally {
+    isSubmitting.value = false
+  }
 })
 </script>
 
 <template>
-  <div class="w-full sm:max-w-md">
-    <CardHeader>
-      <CardTitle>Bug Report</CardTitle>
-      <CardDescription>
-        Help us improve by reporting bugs you encounter.
-      </CardDescription>
-    </CardHeader>
-    <CardContent>
-      <form id="form-vee-demo" @submit="onSubmit">
-        <FieldGroup>
-          <VeeField v-slot="{ componentField, errors }" name="title">
-            <Field :data-invalid="!!errors.length">
-              <FieldLabel for="form-vee-demo-title">
-                Bug Title
-              </FieldLabel>
-              <Input id="form-vee-demo-title" v-bind="componentField" placeholder="Login button not working on mobile"
-                autocomplete="off" :aria-invalid="!!errors.length" />
-              <FieldError v-if="errors.length" :errors="errors" />
-            </Field>
-          </VeeField>
+  <form id="monitored-product-form" class="space-y-4" @submit="onSubmit">
+    <FieldGroup>
+      <!-- Campo SKU -->
+      <VeeField v-slot="{ componentField, errors }" name="sku">
+        <Field :data-invalid="!!errors.length">
+          <FieldLabel for="sku">
+            SKU do Produto <span class="text-destructive">*</span>
+          </FieldLabel>
+          <Input
+            id="sku"
+            v-bind="componentField"
+            placeholder="Ex: FGR-CAM-001-G"
+            autocomplete="off"
+            :aria-invalid="!!errors.length"
+          />
+          <FieldError v-if="errors.length" :errors="errors" />
+        </Field>
+      </VeeField>
 
-          <VeeField v-slot="{ componentField, value, errors }" name="description">
-            <Field :data-invalid="!!errors.length">
-              <FieldLabel for="form-vee-demo-description">
-                Description
-              </FieldLabel>
-              <InputGroup>
-                <InputGroupTextarea id="form-vee-demo-description" v-bind="componentField"
-                  placeholder="I'm having an issue with the login button on mobile." :rows="6"
-                  class="min-h-24 resize-none" :aria-invalid="!!errors.length" />
-                <InputGroupAddon align="block-end">
-                  <InputGroupText class="tabular-nums">
-                    {{ value?.length || 0 }}/100 characters
-                  </InputGroupText>
-                </InputGroupAddon>
-              </InputGroup>
-              <FieldDescription>
-                Include steps to reproduce, expected behavior, and what actually
-                happened.
-              </FieldDescription>
-              <FieldError v-if="errors.length" :errors="errors" />
-            </Field>
-          </VeeField>
-        </FieldGroup>
-      </form>
-    </CardContent>
-    <CardFooter>
-      <Field orientation="horizontal">
-        <Button type="button" variant="outline" @click="resetForm">
-          Reset
-        </Button>
-        <Button type="submit" form="form-vee-demo">
-          Submit
-        </Button>
-      </Field>
-    </CardFooter>
-  </div>
+      <!-- Tipo de Monitoramento (Variação vs Pai) -->
+      <VeeField v-slot="{ componentField, errors }" name="sku_type">
+        <Field :data-invalid="!!errors.length">
+          <FieldLabel> Tipo de Produto / SKU <span class="text-destructive">*</span> </FieldLabel>
+          <div class="grid grid-cols-2 gap-3 pt-1">
+            <label
+              class="flex cursor-pointer items-center justify-between rounded-lg border p-3 text-sm transition-colors hover:bg-muted/50 has-checked:border-primary has-checked:bg-primary/5"
+            >
+              <div class="space-y-0.5">
+                <span class="font-medium text-foreground">Variação (Filho)</span>
+                <p class="text-xs text-muted-foreground">Tamanho/cor específico</p>
+              </div>
+              <input
+                type="radio"
+                value="variation"
+                v-bind="componentField"
+                class="accent-primary"
+              />
+            </label>
+
+            <label
+              class="flex cursor-pointer items-center justify-between rounded-lg border p-3 text-sm transition-colors hover:bg-muted/50 has-checked:border-primary has-checked:bg-primary/5"
+            >
+              <div class="space-y-0.5">
+                <span class="font-medium text-foreground">Produto Pai</span>
+                <p class="text-xs text-muted-foreground">Estoque agrupado</p>
+              </div>
+              <input type="radio" value="parent" v-bind="componentField" class="accent-primary" />
+            </label>
+          </div>
+          <FieldError v-if="errors.length" :errors="errors" />
+        </Field>
+      </VeeField>
+
+      <!-- Nome do Produto -->
+      <VeeField v-slot="{ componentField, errors }" name="name">
+        <Field :data-invalid="!!errors.length">
+          <FieldLabel for="name">
+            Nome do Produto <span class="text-destructive">*</span>
+          </FieldLabel>
+          <Input
+            id="name"
+            v-bind="componentField"
+            :placeholder="
+              isLookingUpProduct ? 'Consultando Magazord...' : 'Preenchido pela Magazord'
+            "
+            readonly
+            :aria-invalid="!!errors.length"
+          />
+          <p v-if="productLookupError" class="text-sm text-destructive" role="alert">
+            {{ productLookupError }}
+          </p>
+          <p v-else class="text-xs text-muted-foreground">
+            O nome é obtido automaticamente da API Magazord a partir do SKU.
+          </p>
+          <FieldError v-if="errors.length" :errors="errors" />
+        </Field>
+      </VeeField>
+
+      <!-- Limite Mínimo para Alerta -->
+      <VeeField v-slot="{ componentField, errors }" name="min_quantity">
+        <Field :data-invalid="!!errors.length">
+          <FieldLabel for="min_quantity">
+            Estoque Mínimo para Alerta <span class="text-destructive">*</span>
+          </FieldLabel>
+          <Input
+            id="min_quantity"
+            type="number"
+            min="0"
+            step="1"
+            v-bind="componentField"
+            placeholder="5"
+            :aria-invalid="!!errors.length"
+          />
+          <p class="text-xs text-muted-foreground">
+            Quando o estoque disponível for menor ou igual a esse valor, o alerta no Discord será
+            disparado.
+          </p>
+          <FieldError v-if="errors.length" :errors="errors" />
+        </Field>
+      </VeeField>
+    </FieldGroup>
+
+    <!-- Botões de Ação -->
+    <div class="flex justify-end gap-2 pt-2">
+      <Button type="button" variant="outline" :disabled="isSubmitting" @click="emit('cancel')">
+        Cancelar
+      </Button>
+      <Button
+        type="submit"
+        form="monitored-product-form"
+        :disabled="isSubmitting || isLookingUpProduct || !values.name"
+      >
+        <Loader v-if="isSubmitting" class="animate-spin" />
+        Salvar Monitoramento
+      </Button>
+    </div>
+  </form>
 </template>
