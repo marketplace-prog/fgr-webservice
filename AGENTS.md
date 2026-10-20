@@ -310,7 +310,7 @@ As variáveis necessárias estão registradas no [.env.example](file:///c:/Users
 | `PORT`                          | Local          | Porta do servidor de desenvolvimento (ex: 3000)                             |
 | `SUPABASE_URL`                  | Público        | URL do projeto Supabase                                                     |
 | `SUPABASE_KEY`                  | Público        | Anon/Public API Key do Supabase                                             |
-| `SUPABASE_SERVICE_KEY`          | Privado/Server | Chave Service Role para bypass de RLS em rotas internas                     |
+| `NUXT_SUPABASE_SECRET_KEY`      | Privado/Server | Chave secreta Supabase para operações internas que bypassam RLS; use `NUXT_SUPABASE_SERVICE_KEY` para chaves legadas `service_role` |
 | `DISCORD_WEBHOOK_NOVOS_PEDIDOS` | Privado/Server | Webhook do Discord para avisos de novas vendas                              |
 | `DISCORD_WEBHOOK_ATUALIZACOES`  | Privado/Server | Webhook do Discord para avisos de alteração de situação                     |
 | `DISCORD_WEBHOOK_ESTOQUE_BAIXO` | Privado/Server | Webhook do Discord para canal de alertas de estoque baixo                   |

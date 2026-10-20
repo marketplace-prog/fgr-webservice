@@ -12,6 +12,14 @@ export default defineNuxtConfig({
   css: ['~/assets/css/tailwind.css'],
 
   runtimeConfig: {
+    supabase: {
+      serviceKey: process.env.NUXT_SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_KEY || '',
+      secretKey:
+        process.env.NUXT_SUPABASE_SECRET_KEY ||
+        process.env.SUPABASE_SECRET_KEY ||
+        process.env.SUPABASE_SERVICE_ROLE_KEY ||
+        '',
+    },
     magazord: {
       apiUrl: process.env.MAGAZORD_API_URL || '',
       apiToken: process.env.MAGAZORD_API_TOKEN || '',

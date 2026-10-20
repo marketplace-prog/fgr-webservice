@@ -13,12 +13,13 @@
 
 ---
 
-## 2. Dependência de `SUPABASE_SERVICE_KEY` no Ambiente
+## 2. Credencial Supabase de servidor no runtime
 
-- **Armadilha:** A rota de cron usa `serverSupabaseServiceRole(event)` para ler a tabela `stock_monitors` bypassando o RLS.
-- **Impacto:** Esse método exige a variável de ambiente `SUPABASE_SERVICE_KEY`. Nem o `.env` local nem o `.env.example` listavam essa chave originalmente. Se ela não for cadastrada nas variáveis de ambiente do projeto na Vercel, qualquer execução do cron falhará com erro 500 no runtime da Vercel.
+- **Armadilha:** As rotas de cron e de cadastro de leads usam `serverSupabaseServiceRole(event)` para executar operações internas sem a sessão do usuário. Uma chave pública (`anon`/publishable) não tem esses privilégios.
+- **Impacto:** O módulo Nuxt lê `NUXT_SUPABASE_SECRET_KEY` ou `NUXT_SUPABASE_SERVICE_KEY` do runtime config. Configurar somente `SUPABASE_SERVICE_KEY` pode não fornecer a credencial esperada no runtime da Vercel; usar uma chave pública resulta em `permission denied` com role `anon`.
 - **Como evitar:**
-  - Cadastre `SUPABASE_SERVICE_KEY` no painel de Environment Variables da Vercel e no `.env` local para desenvolvimento.
+  - Configure `NUXT_SUPABASE_SECRET_KEY` com a secret key privada do projeto Supabase ou, para chaves legadas, `NUXT_SUPABASE_SERVICE_KEY` com a chave `service_role`. Cadastre-a como segredo de servidor na Vercel e no `.env` local.
+  - Nunca conceda `INSERT` à role `anon` para contornar esse erro. A tabela de leads deve continuar aceitando escrita somente via service role.
 
 ---
 

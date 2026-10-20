@@ -34,8 +34,8 @@
 - **Endpoint:** `POST /api/public/landing-leads`, chamado pelo formulário na landing incorporada ou acessada diretamente.
 - **Validação:** `shared/schemas/landing-page-lead.schema.ts` valida os campos no navegador e novamente no Nitro. Um honeypot simples rejeita envios automatizados que preencham o campo oculto.
 - **Banco:** migração `20261020174130_create_landing_page_leads.sql` cria `public.landing_page_leads`, habilita RLS, revoga escrita pública e permite leitura apenas a usuários com `app_metadata.role = 'admin'`. A escrita usa a service role exclusivamente no servidor.
-- **Conversão:** a API retorna o identificador somente depois da inserção no banco. O cliente então abre o WhatsApp `+55 47 9215-4477` com especificações e protocolo do lead. Se a persistência falhar, o formulário informa o erro e não redireciona.
-- **Privacidade e deploy:** o formulário registra consentimento, domínio de referência e UTMs. O Web Component encaminha as UTMs da página hospedeira para o iframe. Configure a variável `SUPABASE_SERVICE_KEY` somente como segredo de servidor. Antes de campanha pública, defina uma política de retenção de leads e proteção contra abuso compatível com a infraestrutura de deploy.
+- **Conversão:** após a inserção no banco, o cliente abre o WhatsApp `+55 47 9215-4477` com uma mensagem formatada com o nome da pessoa, medidas e especificações do pedido; o protocolo não é incluído na mensagem. Se a persistência falhar, o formulário informa o erro e não redireciona.
+- **Privacidade e deploy:** o formulário registra consentimento, domínio de referência e UTMs. O Web Component encaminha as UTMs da página hospedeira para o iframe. Configure `NUXT_SUPABASE_SECRET_KEY` (ou `NUXT_SUPABASE_SERVICE_KEY` para uma chave legada `service_role`) somente como segredo de servidor. Não use a chave pública `SUPABASE_KEY` nessa configuração. Antes de campanha pública, defina uma política de retenção de leads e proteção contra abuso compatível com a infraestrutura de deploy.
 
 ---
 
