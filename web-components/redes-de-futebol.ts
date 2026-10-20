@@ -1,7 +1,7 @@
 const slug = 'redes-de-futebol'
 const defaultHeight = 1700
 const minHeight = 900
-const maxHeight = 3000
+const maxHeight = 6000
 const script = document.currentScript as HTMLScriptElement | null
 const scriptBaseUrl = script?.src ? new URL(script.src).origin : window.location.origin
 

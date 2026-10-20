@@ -22,7 +22,7 @@
 - A rota define title, description, keywords, robots, canonical, Open Graph e Twitter Card em português; parâmetros de incorporação e campanha não entram na URL canônica.
 - A página não renderiza cabeçalho nem rodapé para ser incorporada ao site principal. Inclui FAQ de medidas, recuos, malhas, materiais, fabricação e envio.
 - O seletor de malha aceita 10, 12, 13, 15 e 16 cm; a opção 15 × 15 cm é indicada no FAQ para futebol society / suíço.
-- **Web Component:** `GET /web-components/redes-de-futebol.js`, gerado pelo comando `bun run build:web-component`. Para incorporar:
+- **Web Component:** `GET /web-components/redes-de-futebol.js`, gerado pelo comando `bun run build:web-component`. Ele carrega a landing inteira (hero, destaques, formulário e FAQ) dentro do iframe e ajusta sua altura conforme o conteúdo. Para incorporar:
 
   ```html
   <redes-de-futebol></redes-de-futebol>

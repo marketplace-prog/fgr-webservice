@@ -81,62 +81,60 @@ onBeforeUnmount(() => resizeObserver?.disconnect())
     class="landing-page min-h-screen bg-background font-['Source_Sans_3',sans-serif] text-foreground"
     :class="{ 'is-embedded': isEmbed }"
   >
-    <template v-if="!isEmbed">
-      <section
-        class="mx-auto grid max-w-7xl items-center gap-10 px-5 pt-8 pb-16 sm:px-8 md:grid-cols-2 md:pt-12 md:pb-24"
+    <section
+      class="mx-auto grid max-w-7xl items-center gap-10 px-5 pt-8 pb-16 sm:px-8 md:grid-cols-2 md:pt-12 md:pb-24"
+    >
+      <div>
+        <span class="mb-5 block h-1.5 w-14 rounded-full bg-accent" aria-hidden="true"></span>
+        <p class="mb-4 text-sm font-bold tracking-[0.2em] text-primary uppercase">
+          Equipamentos esportivos FGR Sports
+        </p>
+        <p class="mb-4 text-xs font-bold tracking-[0.2em] text-muted-foreground uppercase">
+          Rede sob medida para sua trave
+        </p>
+        <h1
+          class="max-w-xl text-5xl leading-[0.98] font-black tracking-tight sm:text-6xl lg:text-7xl"
+        >
+          O par de redes certo para o seu campo.
+        </h1>
+        <p class="mt-6 max-w-lg text-lg leading-8 text-muted-foreground">
+          Escolha a cor, a espessura do fio, a malha e informe as medidas da sua trave. Nossa equipe
+          prepara um orçamento personalizado para você.
+        </p>
+        <a
+          href="#orcamento"
+          class="mt-8 inline-flex min-h-12 items-center justify-center rounded-lg bg-primary px-7 py-3 font-bold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        >
+          Solicitar orçamento
+        </a>
+        <p class="mt-4 text-sm text-muted-foreground">
+          Poliéster seda virgem importado · Fabricação em até 8 dias úteis
+        </p>
+      </div>
+
+      <div
+        class="flex aspect-[4/3] min-h-64 items-center justify-center rounded-3xl border-2 border-dashed border-border bg-muted p-8 text-center"
+        role="img"
+        aria-label="Espaço reservado para foto de uma trave de futebol com rede"
       >
         <div>
-          <span class="mb-5 block h-1.5 w-14 rounded-full bg-accent" aria-hidden="true"></span>
-          <p class="mb-4 text-sm font-bold tracking-[0.2em] text-primary uppercase">
-            Equipamentos esportivos FGR Sports
-          </p>
-          <p class="mb-4 text-xs font-bold tracking-[0.2em] text-muted-foreground uppercase">
-            Rede sob medida para sua trave
-          </p>
-          <h1
-            class="max-w-xl text-5xl leading-[0.98] font-black tracking-tight sm:text-6xl lg:text-7xl"
+          <span
+            class="mb-3 block text-sm font-bold tracking-[0.15em] text-muted-foreground uppercase"
           >
-            O par de redes certo para o seu campo.
-          </h1>
-          <p class="mt-6 max-w-lg text-lg leading-8 text-muted-foreground">
-            Escolha a cor, a espessura do fio, a malha e informe as medidas da sua trave. Nossa
-            equipe prepara um orçamento personalizado para você.
-          </p>
-          <a
-            href="#orcamento"
-            class="mt-8 inline-flex min-h-12 items-center justify-center rounded-lg bg-primary px-7 py-3 font-bold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-          >
-            Solicitar orçamento
-          </a>
-          <p class="mt-4 text-sm text-muted-foreground">
-            Poliéster seda virgem importado · Fabricação em até 8 dias úteis
-          </p>
+            Placeholder para foto
+          </span>
+          <p class="text-sm text-muted-foreground">Campo de futebol com trave e rede instalada</p>
         </div>
+      </div>
+    </section>
 
-        <div
-          class="flex aspect-[4/3] min-h-64 items-center justify-center rounded-3xl border-2 border-dashed border-border bg-muted p-8 text-center"
-          role="img"
-          aria-label="Espaço reservado para foto de uma trave de futebol com rede"
-        >
-          <div>
-            <span
-              class="mb-3 block text-sm font-bold tracking-[0.15em] text-muted-foreground uppercase"
-            >
-              Placeholder para foto
-            </span>
-            <p class="text-sm text-muted-foreground">Campo de futebol com trave e rede instalada</p>
-          </div>
-        </div>
-      </section>
-
-      <section class="border-y border-border bg-card">
-        <div class="mx-auto grid max-w-7xl gap-6 px-5 py-7 sm:grid-cols-3 sm:px-8">
-          <p class="font-semibold">Fio em poliéster seda virgem importado</p>
-          <p class="font-semibold">Cores, espessuras e malhas à sua escolha</p>
-          <p class="font-semibold">Medidas personalizáveis</p>
-        </div>
-      </section>
-    </template>
+    <section class="border-y border-border bg-card">
+      <div class="mx-auto grid max-w-7xl gap-6 px-5 py-7 sm:grid-cols-3 sm:px-8">
+        <p class="font-semibold">Fio em poliéster seda virgem importado</p>
+        <p class="font-semibold">Cores, espessuras e malhas à sua escolha</p>
+        <p class="font-semibold">Medidas personalizáveis</p>
+      </div>
+    </section>
 
     <section id="orcamento" class="mx-auto max-w-4xl px-5 py-12 sm:px-8 sm:py-16">
       <div v-if="isEmbed" class="mb-8">
