@@ -13,7 +13,29 @@
 | **Checagem de Estoque (Cron)**   | `/api/cron/check-stock`            | `GET`  | Vercel Cron (`0 10 * * *`, 07:00 BRT) | Bearer Token _(TODO: validar CRON_SECRET)_ | Embed Discord (`DISCORD_WEBHOOK_ESTOQUE_BAIXO`) |
 | **Verificar Estoque Agora**      | `/api/inventory/check-single`      | `POST` | Painel Web (Autenticado)              | Cookie / Sessão Supabase                   | Atualiza linha e alerta Discord se $\le$ mínimo |
 | **Health Check**                 | `/api/health`                      | `GET`  | Monitoramento externo / Uptime        | Nenhuma (Pública)                          | Retorna `{ status: 'ok', time }`                |
+| **Cadastro de lead da landing**  | `/api/public/landing-leads`        | `POST` | Landing pública / Web Component       | Validação Zod server-side + service role   | Grava lead em `landing_page_leads`              |
 | **Rastreio de Frete Storefront** | `public/track-shipping-request.js` | N/A    | Script no browser do cliente          | Nenhuma                                    | Evento `calculate_shipping` no GA4 dataLayer    |
+
+## Cadastro de Lead — Landing Page de Redes
+
+- **Página pública:** `/lp/redes-de-futebol`; não exige autenticação.
+- A rota define title, description, keywords, robots, canonical, Open Graph e Twitter Card em português; parâmetros de incorporação e campanha não entram na URL canônica.
+- A página não renderiza cabeçalho nem rodapé para ser incorporada ao site principal. Inclui FAQ de medidas, recuos, malhas, materiais, fabricação e envio.
+- O seletor de malha aceita 10, 12, 13, 15 e 16 cm; a opção 15 × 15 cm é indicada no FAQ para futebol society / suíço.
+- **Web Component:** `GET /web-components/redes-de-futebol.js`, gerado pelo comando `bun run build:web-component`. Para incorporar:
+
+  ```html
+  <redes-de-futebol></redes-de-futebol>
+  <script src="https://SEU-DOMINIO/web-components/redes-de-futebol.js"></script>
+  ```
+
+  Para servir o bundle em CDN separada, configure `base-url` no elemento com a origem do serviço.
+
+- **Endpoint:** `POST /api/public/landing-leads`, chamado pelo formulário na landing incorporada ou acessada diretamente.
+- **Validação:** `shared/schemas/landing-page-lead.schema.ts` valida os campos no navegador e novamente no Nitro. Um honeypot simples rejeita envios automatizados que preencham o campo oculto.
+- **Banco:** migração `20261020174130_create_landing_page_leads.sql` cria `public.landing_page_leads`, habilita RLS, revoga escrita pública e permite leitura apenas a usuários com `app_metadata.role = 'admin'`. A escrita usa a service role exclusivamente no servidor.
+- **Conversão:** a API retorna o identificador somente depois da inserção no banco. O cliente então abre o WhatsApp `+55 47 9215-4477` com especificações e protocolo do lead. Se a persistência falhar, o formulário informa o erro e não redireciona.
+- **Privacidade e deploy:** o formulário registra consentimento, domínio de referência e UTMs. O Web Component encaminha as UTMs da página hospedeira para o iframe. Configure a variável `SUPABASE_SERVICE_KEY` somente como segredo de servidor. Antes de campanha pública, defina uma política de retenção de leads e proteção contra abuso compatível com a infraestrutura de deploy.
 
 ---
 

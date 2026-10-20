@@ -1,6 +1,6 @@
 # AGENTS.md — Guia do Desenvolvedor e Fonte Única de Verdade
 
-> **Última revisão:** 19 de outubro de 2026  
+> **Última revisão:** 20 de outubro de 2026
 > **Aviso obrigatório:** Se você alterar a stack, a estrutura de diretórios, schemas ou fluxos de integração/cron, atualize este arquivo e os documentos em `docs/` no mesmo commit.
 
 ---
@@ -11,6 +11,9 @@ O **`fgr-webservice`** (FGR Sports) é um monorail fullstack construído em **Nu
 
 1. **Hub de Integração de E-commerce (Magazord ➔ Discord):** Recebe webhooks da plataforma Magazord (novos pedidos e atualizações de situação), processa regras de negócio gerando insights estratégicos (viabilidade de frete, risco de inadimplência, cupom, cross-sell) e despacha alertas ricos via Discord Embeds.
 2. **Painel Administrativo & Gestão de Estoque:** Aplicação interna autenticada via Supabase para monitorar níveis mínimos de estoque de SKUs e alertar a equipe quando houver necessidade de reposição.
+3. **Landing pages públicas:** Captura de leads por páginas `/lp/[slug]`, com cadastro server-side no Supabase e distribuição como Web Component.
+
+**Nicho:** esporte e equipamentos esportivos. A identidade visual FGR usa azul `#035096` como cor primária e laranja `#fe3e00` como cor de destaque, registrados como tokens semânticos em `app/assets/css/tailwind.css`.
 
 ---
 
@@ -88,8 +91,12 @@ fgr-webservice/
 │   ├── pages/                      # Roteamento baseado em arquivos
 │   │   ├── index.vue               # Dashboard inicial (FGR Sports)
 │   │   ├── login.vue               # Tela de autenticação Supabase
+│   │   ├── lp/[slug].vue           # Landing pages públicas
 │   │   └── inventory/              # Gestão de inventário
 │   │       └── monitored-inventory.vue
+│   ├── components/landing/         # Componentes das landing pages
+│   │   ├── index.ts                # Barrel com exports nomeados e default
+│   │   └── LeadCaptureForm.vue     # Formulário compartilhado
 │   ├── plugins/                    # Plugins Vue/Nuxt (ex: ssr-width.ts para @vueuse)
 │   └── server/                     # [Atenção] Ver nota sobre app/server vs server/
 │       └── api/cron/check-stock.ts
@@ -102,6 +109,8 @@ fgr-webservice/
 │   └── track-shipping-request.js   # Script para captura de frete e disparo GA4
 ├── server/                         # Backend do Nitro (APIs e Webhooks)
 │   ├── api/
+│   │   ├── public/
+│   │   │   └── landing-leads.post.ts # Validação e gravação de leads
 │   │   ├── cron/
 │   │   │   └── check-stock.get.ts  # Rota oficial Vercel Cron de verificação de estoque
 │   │   ├── health.get.ts           # Health check endpoint
@@ -121,6 +130,7 @@ fgr-webservice/
 ├── supabase/                       # Migrações e esquemas do Supabase
 │   └── migrations/
 │       └── 20261019_create_stock_monitors.sql # Tabela stock_monitors com RLS
+├── web-components/                 # Entradas dos Web Components publicados no deploy
 ├── .editorconfig                   # Configurações de charset, tabs e line-ending (LF)
 ├── .env.example                    # Exemplo de variáveis de ambiente necessárias
 ├── .prettierrc                     # Regras Prettier (sem ponto e vírgula, aspas simples)
@@ -131,6 +141,9 @@ fgr-webservice/
 ├── tsconfig.json                   # Configuração base de TypeScript
 └── vercel.json                     # Cron de estoque diário às 07:00 BRT (10:00 UTC)
 ```
+
+A landing inicial de redes está em `/lp/redes-de-futebol`. O build gera
+`public/web-components/redes-de-futebol.js`, que registra o custom element `<redes-de-futebol>`.
 
 > [!NOTE]
 > **Atenção à pasta `app/server`:** O arquivo `app/server/api/cron/check-stock.ts` foi criado dentro de `app/server/`, mas a convenção do Nitro no Nuxt 4 e a rota declarada no `vercel.json` (`/api/cron/check-stock`) esperam rotas de servidor em `server/api/`. Consulte [docs/PITFALLS.md](file:///c:/Users/marke/OneDrive/Desktop/ale/fgr-webservice/docs/PITFALLS.md) para detalhes.
@@ -194,6 +207,13 @@ Regras ativas no repositório ([eslint.config.mjs](file:///c:/Users/marke/OneDri
 - Primitivas residem em `app/components/ui/` e são configuradas em [components.json](file:///c:/Users/marke/OneDrive/Desktop/ale/fgr-webservice/components.json).
 - O prefixo de componente é vazio (`prefix: ""` em `nuxt.config.ts`), portanto componentes são importados diretamente como `Button`, `Dialog`, `Input`, etc.
 - Ao criar novos componentes compostos, utilize os componentes shadcn existentes em vez de recriar elementos nativos HTML.
+
+### Identidade visual FGR Sports
+
+- Nicho do produto: esporte e equipamentos esportivos.
+- Azul primário FGR: `#035096` (`--fgr-blue`).
+- Laranja de destaque FGR: `#fe3e00` (`--fgr-orange`).
+- Use os tokens semânticos `primary` e `accent` em vez de repetir cores literais nas classes de componentes.
 
 ### Tailwind CSS v4 e Design Tokens
 
@@ -313,6 +333,7 @@ As variáveis necessárias estão registradas no [.env.example](file:///c:/Users
 - ✅ Trate datas da Magazord com `parseMagazordDate()` para corrigir offsets de timezone incompletos (ex: `-03` para `-03:00`).
 - ✅ Autentique todas as chamadas REST à Magazord com `Authorization: Basic ${base64(token + ':' + senha)}` e use exclusivamente HTTPS. Mantenha token e senha em variáveis privadas do servidor; nunca registre o header ou as credenciais em logs.
 - ✅ Trunque campos de embeds do Discord usando `truncate()` para nunca estourar o limite de 1024 caracteres da API.
+- ✅ Para leads públicos, valide novamente no Nitro, grave usando a service role somente no servidor e nunca exponha leitura pública dos cadastros.
 
 ### DON'T (Não Faça)
 

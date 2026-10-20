@@ -5,6 +5,7 @@
 .nitro
 .cache
 dist
+/public/web-components/redes-de-futebol.js
 
 # Node dependencies
 node_modules

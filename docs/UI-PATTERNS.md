@@ -3,6 +3,14 @@
 Este documento registra interações reutilizáveis da interface administrativa. Ao introduzir
 comportamentos equivalentes em outra tela, reutilize as primitivas existentes e mantenha o padrão.
 
+## Identidade visual FGR Sports
+
+- O produto atende ao nicho de esporte e equipamentos esportivos.
+- Use o azul FGR `#035096` como cor primária e o laranja `#fe3e00` como destaque, através dos tokens `primary` e `accent` definidos em `app/assets/css/tailwind.css`.
+- Nas páginas públicas, use a assinatura horizontal oficial da marca hospedada na CDN Magazord; não substitua por texto estilizado.
+- Os componentes de landing são exportados por `app/components/landing/index.ts`, com export default da coleção e exports nomeados para imports seletivos.
+- Landing pages destinadas à incorporação como Web Component não renderizam cabeçalho nem rodapé; navegação e identidade global pertencem ao site hospedeiro. Dúvidas podem ser organizadas em elementos `<details>` acessíveis pelo teclado.
+
 ## Testes de features
 
 - Toda feature nova ou alteração de comportamento deve incluir testes automatizados para o

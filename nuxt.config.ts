@@ -30,6 +30,11 @@ export default defineNuxtConfig({
 
   supabase: {
     types: '~~/shared/types/database.types.ts',
+    redirectOptions: {
+      login: '/login',
+      callback: '/confirm',
+      exclude: ['/lp/.*'],
+    },
   },
 
   modules: ['shadcn-nuxt', '@nuxt/eslint', '@nuxtjs/supabase'],

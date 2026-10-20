@@ -3,6 +3,75 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export interface Database {
   public: {
     Tables: {
+      landing_page_leads: {
+        Row: {
+          id: string
+          landing_slug: string
+          name: string
+          email: string | null
+          phone: string | null
+          thread_color: 'preta' | 'branca' | 'azul' | 'verde'
+          thread_thickness_mm: 3 | 4 | 6
+          mesh_size_cm: 10 | 12 | 13 | 15 | 16
+          length_cm: number
+          height_cm: number
+          upper_recess_cm: number
+          lower_recess_cm: number
+          utm_source: string | null
+          utm_medium: string | null
+          utm_campaign: string | null
+          utm_term: string | null
+          utm_content: string | null
+          referrer: string | null
+          consented_at: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          landing_slug: string
+          name: string
+          email?: string | null
+          phone?: string | null
+          thread_color: 'preta' | 'branca' | 'azul' | 'verde'
+          thread_thickness_mm: 3 | 4 | 6
+          mesh_size_cm: 10 | 12 | 13 | 15 | 16
+          length_cm: number
+          height_cm: number
+          upper_recess_cm: number
+          lower_recess_cm: number
+          utm_source?: string | null
+          utm_medium?: string | null
+          utm_campaign?: string | null
+          utm_term?: string | null
+          utm_content?: string | null
+          referrer?: string | null
+          consented_at?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          landing_slug?: string
+          name?: string
+          email?: string | null
+          phone?: string | null
+          thread_color?: 'preta' | 'branca' | 'azul' | 'verde'
+          thread_thickness_mm?: 3 | 4 | 6
+          mesh_size_cm?: 10 | 12 | 13 | 15 | 16
+          length_cm?: number
+          height_cm?: number
+          upper_recess_cm?: number
+          lower_recess_cm?: number
+          utm_source?: string | null
+          utm_medium?: string | null
+          utm_campaign?: string | null
+          utm_term?: string | null
+          utm_content?: string | null
+          referrer?: string | null
+          consented_at?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
       stock_monitors: {
         Row: {
           id: string
