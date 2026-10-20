@@ -3,6 +3,7 @@ import {
   landingPageLeadSchema,
   type LandingPageLeadInput,
 } from '~~/shared/schemas/landing-page-lead.schema'
+import { makeLandingLeadWhatsAppMessage } from '~~/shared/utils/landing-page-whatsapp'
 import { formatBrazilianPhone } from '~~/shared/utils/phone'
 
 const props = defineProps<{
@@ -111,15 +112,8 @@ function formatFieldErrors(error: ReturnType<typeof landingPageLeadSchema.safePa
   return errors
 }
 
-function makeWhatsAppUrl(lead: LandingPageLeadInput, leadId: string) {
-  const message = [
-    'Olá! Acabei de solicitar um orçamento de redes para trave.',
-    `Protocolo: ${leadId}`,
-    `Medidas: ${lead.lengthCm} cm (comprimento) × ${lead.heightCm} cm (altura)`,
-    `Recuos: ${lead.upperRecessCm} cm superior e ${lead.lowerRecessCm} cm inferior`,
-    `Fio: ${lead.threadThicknessMm} mm · Malha: ${lead.meshSizeCm}×${lead.meshSizeCm} cm · Cor: ${lead.threadColor}`,
-  ].join('\n')
-
+function makeWhatsAppUrl(lead: LandingPageLeadInput) {
+  const message = makeLandingLeadWhatsAppMessage(lead)
   return `https://wa.me/554792154477?text=${encodeURIComponent(message)}`
 }
 
@@ -141,11 +135,11 @@ async function submitLead() {
   isSubmitting.value = true
 
   try {
-    const response = await $fetch<{ id: string }>('/api/public/landing-leads', {
+    await $fetch('/api/public/landing-leads', {
       method: 'POST',
       body: parsed.data,
     })
-    const whatsappUrl = makeWhatsAppUrl(parsed.data, response.id)
+    const whatsappUrl = makeWhatsAppUrl(parsed.data)
 
     if (props.isEmbed && window.parent !== window) {
       window.parent.postMessage({ type: 'fgr-lead-submitted', whatsappUrl }, '*')
