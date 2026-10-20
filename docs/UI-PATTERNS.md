@@ -10,6 +10,7 @@ comportamentos equivalentes em outra tela, reutilize as primitivas existentes e 
 - Nas páginas públicas, use a assinatura horizontal oficial da marca hospedada na CDN Magazord; não substitua por texto estilizado.
 - Os componentes de landing são exportados por `app/components/landing/index.ts`, com export default da coleção e exports nomeados para imports seletivos.
 - Landing pages destinadas à incorporação como Web Component não renderizam cabeçalho nem rodapé; navegação e identidade global pertencem ao site hospedeiro. Dúvidas podem ser organizadas em elementos `<details>` acessíveis pelo teclado.
+- A galeria de imagens da landing de redes para trave alterna imagens automaticamente com transição em fade e barra de progresso. Pause a troca ao receber foco ou ponteiro, respeite a preferência por movimento reduzido e mantenha um controle acessível para pausar/retomar.
 
 ## Testes de features
 

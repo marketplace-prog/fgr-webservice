@@ -1,9 +1,43 @@
 <script setup lang="ts">
+import { Pause, Play } from '@lucide/vue'
 import { LandingFaq, LeadCaptureForm } from '@/components/landing'
 
 definePageMeta({
   layout: 'no-sidebar',
 })
+
+const gallerySlides = [
+  {
+    src: 'https://fgrsports.cdn.magazord.com.br/img/2022/10/produto/6337/01-modelo-trave-futebol-normal.jpg',
+    alt: 'Trave de futebol padrão com rede instalada',
+  },
+  {
+    src: 'https://fgrsports.cdn.magazord.com.br/img/2023/05/produto/7473/rede-de-protecao-esportiva-e-cobertura-fio-4-0mm-poliester-virgem-futebol.jpg',
+    alt: 'Rede de proteção esportiva e cobertura em poliéster para futebol',
+  },
+  {
+    src: 'https://fgrsports.cdn.magazord.com.br/img/2026/07/produto/14463/rede-para-trave-futebol-campo-padrao-europeu-tipo-caixote-macro.jpg',
+    alt: 'Detalhe da malha da rede para trave de campo padrão europeu tipo caixote',
+  },
+  {
+    src: 'https://fgrsports.cdn.magazord.com.br/img/2026/07/produto/14464/rede-para-trave-futebol-campo-padrao-europeu-tipo-caixote-principal.jpg',
+    alt: 'Vista principal da rede para trave de campo padrão europeu tipo caixote',
+  },
+] as const
+const activeSlide = ref(0)
+const currentSlide = computed(() => gallerySlides[activeSlide.value] ?? gallerySlides[0])
+const isHovered = ref(false)
+const hasFocus = ref(false)
+const isPausedByUser = ref(false)
+const prefersReducedMotion = ref(false)
+const isSlideshowPaused = computed(
+  () => isHovered.value || hasFocus.value || isPausedByUser.value || prefersReducedMotion.value,
+)
+let reducedMotionQuery: MediaQueryList | undefined
+
+function showNextSlide() {
+  activeSlide.value = (activeSlide.value + 1) % gallerySlides.length
+}
 
 const route = useRoute()
 const requestUrl = useRequestURL()
@@ -59,6 +93,10 @@ const pageRoot = useTemplateRef<HTMLElement>('pageRoot')
 let resizeObserver: ResizeObserver | undefined
 
 onMounted(() => {
+  reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+  prefersReducedMotion.value = reducedMotionQuery.matches
+  reducedMotionQuery.addEventListener('change', onReducedMotionChange)
+
   if (!isEmbed.value || window.parent === window || !pageRoot.value) return
 
   const sendHeight = () => {
@@ -72,7 +110,22 @@ onMounted(() => {
   sendHeight()
 })
 
-onBeforeUnmount(() => resizeObserver?.disconnect())
+function onReducedMotionChange(event: MediaQueryListEvent) {
+  prefersReducedMotion.value = event.matches
+}
+
+function onCarouselFocusout(event: FocusEvent) {
+  const carousel = event.currentTarget
+  hasFocus.value =
+    carousel instanceof HTMLElement &&
+    event.relatedTarget instanceof Node &&
+    carousel.contains(event.relatedTarget)
+}
+
+onBeforeUnmount(() => {
+  resizeObserver?.disconnect()
+  reducedMotionQuery?.removeEventListener('change', onReducedMotionChange)
+})
 </script>
 
 <template>
@@ -113,17 +166,58 @@ onBeforeUnmount(() => resizeObserver?.disconnect())
       </div>
 
       <div
-        class="flex aspect-[4/3] min-h-64 items-center justify-center rounded-3xl border-2 border-dashed border-border bg-muted p-8 text-center"
-        role="img"
-        aria-label="Espaço reservado para foto de uma trave de futebol com rede"
+        class="relative isolate aspect-[4/3] min-h-64 overflow-hidden rounded-3xl border border-border bg-card shadow-lg"
+        role="region"
+        aria-label="Fotos de redes e traves de futebol"
+        aria-roledescription="carrossel"
+        @mouseenter="isHovered = true"
+        @mouseleave="isHovered = false"
+        @focusin="hasFocus = true"
+        @focusout="onCarouselFocusout"
       >
-        <div>
-          <span
-            class="mb-3 block text-sm font-bold tracking-[0.15em] text-muted-foreground uppercase"
+        <Transition name="gallery-fade" mode="out-in">
+          <div
+            :key="activeSlide"
+            class="absolute inset-0"
+            role="group"
+            aria-roledescription="slide"
+            aria-live="polite"
+            :aria-label="`Imagem ${activeSlide + 1} de ${gallerySlides.length}: ${currentSlide.alt}`"
           >
-            Placeholder para foto
-          </span>
-          <p class="text-sm text-muted-foreground">Campo de futebol com trave e rede instalada</p>
+            <img
+              :src="currentSlide.src"
+              :alt="currentSlide.alt"
+              class="size-full object-cover"
+              width="1200"
+              height="900"
+              :fetchpriority="activeSlide === 0 ? 'high' : 'auto'"
+            />
+          </div>
+        </Transition>
+
+        <div
+          class="absolute inset-x-0 bottom-0 flex items-center gap-3 bg-gradient-to-t from-black/65 to-transparent px-4 pt-8 pb-3"
+        >
+          <button
+            type="button"
+            class="grid size-11 shrink-0 place-items-center rounded-full text-white transition-colors hover:bg-white/15 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black/40"
+            :aria-label="
+              isPausedByUser ? 'Retomar apresentação automática' : 'Pausar apresentação automática'
+            "
+            :aria-pressed="isPausedByUser"
+            @click="isPausedByUser = !isPausedByUser"
+          >
+            <Play v-if="isPausedByUser" aria-hidden="true" />
+            <Pause v-else aria-hidden="true" />
+          </button>
+          <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-white/40" aria-hidden="true">
+            <div
+              :key="activeSlide"
+              class="gallery-progress h-full rounded-full bg-white"
+              :class="{ 'is-paused': isSlideshowPaused }"
+              @animationend="showNextSlide"
+            ></div>
+          </div>
         </div>
       </div>
     </section>
@@ -181,12 +275,44 @@ onBeforeUnmount(() => resizeObserver?.disconnect())
   min-height: 0;
 }
 
+.gallery-fade-enter-active,
+.gallery-fade-leave-active {
+  transition: opacity 400ms ease;
+}
+
+.gallery-fade-enter-from,
+.gallery-fade-leave-to {
+  opacity: 0;
+}
+
+.gallery-progress {
+  animation: gallery-progress-fill 5s linear forwards;
+}
+
+.gallery-progress.is-paused {
+  animation-play-state: paused;
+}
+
+@keyframes gallery-progress-fill {
+  from {
+    width: 0;
+  }
+
+  to {
+    width: 100%;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .landing-page *,
   .landing-page *::before,
   .landing-page *::after {
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
+  }
+
+  .gallery-progress {
+    animation: none;
   }
 }
 </style>
