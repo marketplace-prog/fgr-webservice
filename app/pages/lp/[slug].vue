@@ -114,6 +114,25 @@ function onReducedMotionChange(event: MediaQueryListEvent) {
   prefersReducedMotion.value = event.matches
 }
 
+function scrollToQuote(event: MouseEvent) {
+  if (!isEmbed.value || window.parent === window) return
+  if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+    return
+  }
+
+  const quoteSection = document.getElementById('orcamento')
+  if (!quoteSection) return
+
+  event.preventDefault()
+  window.parent.postMessage(
+    {
+      type: 'fgr-widget-scroll',
+      top: quoteSection.getBoundingClientRect().top + window.scrollY,
+    },
+    '*',
+  )
+}
+
 function onCarouselFocusout(event: FocusEvent) {
   const carousel = event.currentTarget
   hasFocus.value =
@@ -157,6 +176,7 @@ onBeforeUnmount(() => {
         <a
           href="#orcamento"
           class="mt-8 inline-flex min-h-12 items-center justify-center rounded-lg bg-primary px-7 py-3 font-bold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          @click="scrollToQuote"
         >
           Solicitar orçamento
         </a>

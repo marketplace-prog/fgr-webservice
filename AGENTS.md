@@ -144,6 +144,8 @@ fgr-webservice/
 
 A landing inicial de redes está em `/lp/redes-de-futebol`. O build gera
 `public/web-components/redes-de-futebol.js`, que registra o custom element `<redes-de-futebol>`.
+No iframe incorporado, o CTA do hero solicita por `postMessage` que o componente role a página
+hospedeira até o formulário; o componente valida a origem e o iframe remetente.
 
 > [!NOTE]
 > **Atenção à pasta `app/server`:** O arquivo `app/server/api/cron/check-stock.ts` foi criado dentro de `app/server/`, mas a convenção do Nitro no Nuxt 4 e a rota declarada no `vercel.json` (`/api/cron/check-stock`) esperam rotas de servidor em `server/api/`. Consulte [docs/PITFALLS.md](file:///c:/Users/marke/OneDrive/Desktop/ale/fgr-webservice/docs/PITFALLS.md) para detalhes.

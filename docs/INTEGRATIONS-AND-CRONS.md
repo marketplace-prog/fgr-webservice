@@ -30,6 +30,8 @@
   ```
 
   Para servir o bundle em CDN separada, configure `base-url` no elemento com a origem do serviço.
+  O botão principal envia ao componente um pedido de rolagem até o formulário; o componente valida
+  a origem e o iframe de origem antes de rolar a página hospedeira.
 
 - **Endpoint:** `POST /api/public/landing-leads`, chamado pelo formulário na landing incorporada ou acessada diretamente.
 - **Validação:** `shared/schemas/landing-page-lead.schema.ts` valida os campos no navegador e novamente no Nitro. Um honeypot simples rejeita envios automatizados que preencham o campo oculto.

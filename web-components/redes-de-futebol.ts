@@ -1,3 +1,5 @@
+import { getEmbeddedWidgetScrollTop } from '../shared/utils/embedded-widget-scroll'
+
 const slug = 'redes-de-futebol'
 const defaultHeight = 1700
 const minHeight = 900
@@ -55,6 +57,25 @@ class FgrLandingWidget extends HTMLElement {
       if (Number.isFinite(height)) {
         this.frame.style.height = `${Math.max(minHeight, Math.min(maxHeight, height))}px`
       }
+      return
+    }
+
+    if (event.data.type === 'fgr-widget-scroll') {
+      const targetOffset = event.data.top
+      if (
+        typeof targetOffset !== 'number' ||
+        !Number.isFinite(targetOffset) ||
+        targetOffset < 0 ||
+        targetOffset > maxHeight
+      ) {
+        return
+      }
+
+      const frameTop = this.frame.getBoundingClientRect().top + window.scrollY
+      window.scrollTo({
+        top: getEmbeddedWidgetScrollTop(frameTop, targetOffset),
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+      })
       return
     }
 

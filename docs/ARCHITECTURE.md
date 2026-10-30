@@ -139,7 +139,7 @@ flowchart TD
 - **Formulário:** `app/components/landing/LeadCaptureForm.vue`, compartilhado entre a página pública e sua versão incorporável.
 - **API:** `POST /api/public/landing-leads` valida os campos novamente e grava o lead usando a service role exclusivamente no servidor.
 - **Persistência:** `public.landing_page_leads`, com RLS habilitado, leitura apenas por usuários com `app_metadata.role = 'admin'` e sem escrita direta pelo navegador.
-- **Web Component:** `web-components/redes-de-futebol.ts` gera `public/web-components/redes-de-futebol.js` durante o build. O elemento `<redes-de-futebol>` incorpora a landing em iframe; o atributo `base-url` permite definir a origem do serviço.
+- **Web Component:** `web-components/redes-de-futebol.ts` gera `public/web-components/redes-de-futebol.js` durante o build. O elemento `<redes-de-futebol>` incorpora a landing em iframe; o atributo `base-url` permite definir a origem do serviço. O CTA do hero solicita a rolagem da página hospedeira até o formulário por `postMessage`, validado pela origem e pelo iframe remetente.
 - **Conversão:** o navegador só segue para o WhatsApp após confirmação da gravação do lead.
 
 ---
