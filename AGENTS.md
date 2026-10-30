@@ -144,8 +144,10 @@ fgr-webservice/
 
 A landing inicial de redes está em `/lp/redes-de-futebol`. O build gera
 `public/web-components/redes-de-futebol.js`, que registra o custom element `<redes-de-futebol>`.
-No iframe incorporado, o CTA do hero solicita por `postMessage` que o componente role a página
-hospedeira até o formulário; o componente valida a origem e o iframe remetente.
+**Regra obrigatória para landing pages:** todas são incorporadas ao site hospedeiro por iframe.
+CTAs que levam a seções da própria landing devem solicitar ao componente a rolagem da página
+hospedeira por `postMessage`; não dependa de âncoras ou rolagem apenas dentro do iframe. Consulte
+[docs/UI-PATTERNS.md](./docs/UI-PATTERNS.md) para o padrão de implementação e segurança.
 
 > [!NOTE]
 > **Atenção à pasta `app/server`:** O arquivo `app/server/api/cron/check-stock.ts` foi criado dentro de `app/server/`, mas a convenção do Nitro no Nuxt 4 e a rota declarada no `vercel.json` (`/api/cron/check-stock`) esperam rotas de servidor em `server/api/`. Consulte [docs/PITFALLS.md](file:///c:/Users/marke/OneDrive/Desktop/ale/fgr-webservice/docs/PITFALLS.md) para detalhes.
@@ -209,6 +211,19 @@ Regras ativas no repositório ([eslint.config.mjs](file:///c:/Users/marke/OneDri
 - Primitivas residem em `app/components/ui/` e são configuradas em [components.json](file:///c:/Users/marke/OneDrive/Desktop/ale/fgr-webservice/components.json).
 - O prefixo de componente é vazio (`prefix: ""` em `nuxt.config.ts`), portanto componentes são importados diretamente como `Button`, `Dialog`, `Input`, etc.
 - Ao criar novos componentes compostos, utilize os componentes shadcn existentes em vez de recriar elementos nativos HTML.
+
+### Landing pages incorporadas por iframe
+
+- Considere toda landing page pública incorporada em iframe por um Web Component, inclusive futuras
+  rotas e novos CTAs.
+- Para navegar até uma seção da landing, preserve um `href` semântico, mas, em contexto incorporado,
+  envie ao componente um pedido de rolagem da página hospedeira com a posição do destino. Uma âncora
+  ou `scrollIntoView()` dentro do iframe, isoladamente, não move a página hospedeira.
+- O componente deve aceitar mensagens somente do seu próprio iframe e da origem configurada; valide
+  o tipo e os dados da mensagem antes de rolar. Respeite movimento reduzido e mantenha o link normal
+  funcional fora do iframe e em cliques com modificadores.
+- Cubra a comunicação e o cálculo da rolagem com testes, seguindo
+  [docs/UI-PATTERNS.md](./docs/UI-PATTERNS.md).
 
 ### Identidade visual FGR Sports
 

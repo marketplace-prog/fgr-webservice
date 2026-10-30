@@ -12,6 +12,24 @@ comportamentos equivalentes em outra tela, reutilize as primitivas existentes e 
 - Landing pages destinadas à incorporação como Web Component não renderizam cabeçalho nem rodapé; navegação e identidade global pertencem ao site hospedeiro. Dúvidas podem ser organizadas em elementos `<details>` acessíveis pelo teclado.
 - A galeria de imagens da landing de redes para trave alterna imagens automaticamente com transição em fade e barra de progresso. Pause a troca ao receber foco ou ponteiro, respeite a preferência por movimento reduzido e mantenha um controle acessível para pausar/retomar.
 
+## Navegação em landing pages incorporadas
+
+Todas as landing pages públicas são exibidas no site hospedeiro dentro do iframe de um Web
+Component. Portanto, links e CTAs que apontam para seções da própria landing não podem depender
+apenas da navegação por fragmento (`href="#..."`) ou de `scrollIntoView()` no documento interno:
+isso rola somente o iframe, não a página hospedeira.
+
+- Mantenha um `href` semântico para acessibilidade e como comportamento padrão fora do iframe.
+- Quando a página estiver incorporada, impeça a navegação local do CTA e envie ao pai uma mensagem
+  com o identificador do evento e a posição vertical do destino no documento do iframe.
+- No Web Component, aceite o pedido somente quando `event.source` for o `contentWindow` do iframe
+  incorporado e `event.origin` corresponder à origem configurada. Valide o tipo e os limites dos
+  dados antes de chamar `window.scrollTo()` na página hospedeira.
+- Respeite `prefers-reduced-motion` na rolagem. Cliques com modificadores devem manter o
+  comportamento nativo do link.
+- Adicione testes para o cálculo/limites da rolagem e preserve o comportamento da página quando
+  acessada diretamente, fora do iframe.
+
 ## Testes de features
 
 - Toda feature nova ou alteração de comportamento deve incluir testes automatizados para o
