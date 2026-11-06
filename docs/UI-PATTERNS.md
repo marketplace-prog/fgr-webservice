@@ -64,3 +64,12 @@ Use `@tanstack/vue-table` e os componentes de tabela existentes. Registre explic
 - Agrupe as ações de cada linha em um `DropdownMenu` para reduzir ruído visual na tabela.
 - Use um gatilho de ícone com nome acessível e mantenha os itens dentro de `DropdownMenuGroup`.
 - Preserve regras de habilitação das ações e use a variante `destructive` para exclusões.
+
+### Paginação e carregamento progressivo
+
+- Toda lista tabular deve oferecer paginação com controles acessíveis para avançar e voltar.
+- Permita escolher o tamanho da página; ao trocar a quantidade, volte à primeira página.
+- Quando fizer sentido para a lista, ofereça também o modo opcional de carregamento progressivo ao
+  rolar. Revele os registros em lotes do tamanho escolhido, preserve busca e ordenação e mantenha
+  uma ação explícita de “Carregar mais” como alternativa ao observador de rolagem.
+- Informe quantos registros estão visíveis e o total correspondente ao filtro atual.
