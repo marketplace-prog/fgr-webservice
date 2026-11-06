@@ -46,7 +46,7 @@
 
 :root {
   --fgr-blue: #035096;
-  --fgr-orange: #fe3e00;
+  --fgr-orange: #ff3f00;
   --radius: 0.625rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.141 0.005 285.823);
