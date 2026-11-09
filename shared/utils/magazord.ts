@@ -4,6 +4,123 @@
  * Auto-importados pelo motor Nitro (Nuxt 4).
  */
 
+import type { MagazordPedidoItem, MagazordPedidoPayload } from '../types/magazord'
+
+type PedidoInsightData = Partial<
+  Pick<
+    MagazordPedidoPayload,
+    | 'origem'
+    | 'valorFrete'
+    | 'valorDesconto'
+    | 'valorProduto'
+    | 'cupomCodigo'
+    | 'formaPagamentoNome'
+    | 'condicaoPagamentoParcelas'
+    | 'pedidoTrackingSource'
+    | 'codigoVendedor'
+  >
+>
+
+export const describeMagazordOrderOrigin = (
+  origem: number | string | null | undefined,
+  marketplaceNome?: string | null,
+  lojaNome?: string | null,
+): { title: string; label: string; channel: string } => {
+  const codigoOrigem =
+    origem == null || (typeof origem === 'string' && !origem.trim()) ? Number.NaN : Number(origem)
+
+  switch (codigoOrigem) {
+    case 1:
+      return {
+        title: 'Pedido do site',
+        label: '🌐 Site',
+        channel: `E-commerce: ${lojaNome || 'Loja própria'}`,
+      }
+    case 2:
+      return {
+        title: 'Pedido de marketplace',
+        label: '🛍️ Marketplace',
+        channel: `Marketplace: ${marketplaceNome || 'Não identificado'}`,
+      }
+    case 3:
+      return {
+        title: 'Pedido manual',
+        label: '📝 Manual',
+        channel: 'Cadastrado manualmente no painel Magazord',
+      }
+    default:
+      return {
+        title: 'Pedido com origem não identificada',
+        label: Number.isFinite(codigoOrigem)
+          ? `❔ Origem não identificada (${codigoOrigem})`
+          : '❔ Origem não identificada',
+        channel: 'Canal de venda não informado',
+      }
+  }
+}
+
+export const generateOrderInsights = (
+  pedido: PedidoInsightData,
+  itens: MagazordPedidoItem[],
+  freteCusto: number,
+): string => {
+  const insights: string[] = []
+  const freteCliente = Number(pedido.valorFrete || 0)
+
+  if (freteCliente === 0 && freteCusto > 0) {
+    insights.push(
+      `📦 **Subsídio:** Frete grátis; a loja absorveu **${formatCurrency(freteCusto)}**.`,
+    )
+  } else if (freteCusto > freteCliente) {
+    insights.push(
+      `⚠️ **Frete deficitário:** custo de ${formatCurrency(freteCusto)} e cobrança de ${formatCurrency(freteCliente)} (diferença de ${formatCurrency(freteCusto - freteCliente)}).`,
+    )
+  }
+
+  const desconto = Number(pedido.valorDesconto || 0)
+  const valorProdutos = Number(pedido.valorProduto || 0)
+  if (desconto > 0 && valorProdutos > 0) {
+    const percentualDesconto = (desconto / valorProdutos) * 100
+    if (percentualDesconto > 15) {
+      insights.push(
+        `🚨 **Desconto elevado:** ${percentualDesconto.toFixed(1)}% sobre os produtos (${formatCurrency(desconto)}).`,
+      )
+    }
+  }
+
+  if (pedido.cupomCodigo) {
+    insights.push(`🎟️ **Cupom:** \`${pedido.cupomCodigo}\`.`)
+  }
+
+  const qtdTotalItens = itens.reduce((acc, item) => acc + (item.quantidade || 1), 0)
+  if (qtdTotalItens === 1) {
+    insights.push('🛒 **Carrinho de 1 item:** oportunidade de cross-sell.')
+  } else if (qtdTotalItens >= 4) {
+    insights.push(`🔥 **Carrinho robusto:** ${qtdTotalItens} itens.`)
+  }
+
+  const formaPagamento = (pedido.formaPagamentoNome || '').toUpperCase()
+  if (formaPagamento.includes('PIX')) {
+    insights.push('⚡ **Liquidez imediata:** pagamento via PIX.')
+  } else if ((pedido.condicaoPagamentoParcelas || 0) >= 6) {
+    insights.push(
+      `⏳ **Parcelamento longo:** ${pedido.condicaoPagamentoParcelas}x; considerar custo de antecipação.`,
+    )
+  }
+
+  if (Number(pedido.origem) === 1 && pedido.pedidoTrackingSource) {
+    insights.push(`📣 **Origem do tráfego:** ${pedido.pedidoTrackingSource}.`)
+  }
+
+  if (Number(pedido.origem) === 3 && pedido.codigoVendedor) {
+    insights.push(`👤 **Vendedor:** \`${pedido.codigoVendedor}\`.`)
+  }
+
+  return insights.length > 0
+    ? insights.join('\n')
+    : 'ℹ️ Nenhum alerta identificado nos dados disponíveis; isso não representa uma análise completa de margem.'
+}
+
 /**
  * Extrai apenas o primeiro nome do cliente para uso em notificações,
  * evitando a exposição de dados sensíveis e mantendo a interface limpa.

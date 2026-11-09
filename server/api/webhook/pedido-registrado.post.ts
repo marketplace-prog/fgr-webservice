@@ -5,76 +5,7 @@
  */
 
 import type { MagazordPedidoItem, MagazordPedidoPayload } from '~~/shared/types/magazord'
-
-/**
- * Analisa variáveis da venda (como frete cobrado vs. frete real, cupons, ticket do carrinho)
- * e gera um resumo estratégico com anomalias e indicadores de sucesso.
- *
- * @param pedido - O objeto principal contendo informações financeiras da venda.
- * @param itens - Array de produtos da compra, útil para analisar o volume do carrinho.
- * @param freteCusto - Custo da etiqueta logística retornado na aba de rastreio.
- * @returns Uma string unificada pronta para ser renderizada no Discord contendo todos os alertas acionados.
- */
-const generateInsights = (
-  pedido: MagazordPedidoPayload,
-  itens: MagazordPedidoItem[],
-  freteCusto: number,
-): string => {
-  const insights: string[] = []
-
-  // Análise de Viabilidade do Frete
-  const freteCliente = Number(pedido.valorFrete || 0)
-  if (freteCliente === 0 && freteCusto > 0) {
-    insights.push(
-      `📦 **Subsídio:** Frete Grátis ativado. Loja absorveu custo de **${formatCurrency(freteCusto)}**.`,
-    )
-  } else if (freteCliente < freteCusto) {
-    insights.push(
-      `⚠️ **Frete Deficitário:** O envio custará ${formatCurrency(freteCusto)}, mas o cliente pagou apenas ${formatCurrency(freteCliente)} (Defasagem de ${formatCurrency(freteCusto - freteCliente)}).`,
-    )
-  }
-
-  // Análise de Descontos e Cupons
-  const desconto = Number(pedido.valorDesconto || 0)
-  const valorProdutos = Number(pedido.valorProduto || 0)
-  if (desconto > 0 && valorProdutos > 0) {
-    const percentualDesconto = ((desconto / valorProdutos) * 100).toFixed(1)
-    if (Number(percentualDesconto) > 15) {
-      insights.push(
-        `🚨 **Desconto Agressivo:** Redução de ${percentualDesconto}% no pedido (${formatCurrency(desconto)} off).`,
-      )
-    }
-  }
-
-  if (pedido.cupomCodigo) {
-    insights.push(`🎟️ **Cupom:** Venda convertida usando o cupom \`${pedido.cupomCodigo}\`.`)
-  }
-
-  // Análise de Volume de Carrinho (Cross-Sell)
-  const qtdTotalItens = itens.reduce((acc, item) => acc + (item.quantidade || 1), 0)
-  if (qtdTotalItens === 1) {
-    insights.push(
-      `🛒 **Carrinho Único:** Cliente comprou apenas 1 item. Oportunidade para cross-sell.`,
-    )
-  } else if (qtdTotalItens >= 4) {
-    insights.push(`🔥 **Ótimo Ticket:** Carrinho robusto com ${qtdTotalItens} itens adicionados.`)
-  }
-
-  // Análise Financeira / Risco de Inadimplência ou Custo de Antecipação
-  const formaPagamento = (pedido.formaPagamentoNome || '').toUpperCase()
-  if (formaPagamento.includes('PIX')) {
-    insights.push(`⚡ **Liquidez Imediata:** Pagamento via PIX.`)
-  } else if (pedido.condicaoPagamentoParcelas >= 6) {
-    insights.push(
-      `⏳ **Longo Prazo:** Compra em ${pedido.condicaoPagamentoParcelas}x. Atenção ao custo de antecipação do caixa.`,
-    )
-  }
-
-  // Se nenhum alerta especial for ativado
-  return insights.length > 0
-    ? insights.join('\n\n')
-    : '✅ Pedido saudável, nenhuma anomalia de margem detectada.'
-}
+import { describeMagazordOrderOrigin, generateOrderInsights } from '~~/shared/utils/magazord'
 
 /**
  * Função principal que captura e roteia a chamada HTTP.
@@ -121,12 +52,18 @@ export default defineEventHandler(async (event) => {
       : 'Itens não detalhados neste webhook'
 
     // --- Processamento de Informações Contextuais ---
-    const canalVenda = pedido.marketplaceNome
-      ? `🛍️ **Marketplace:** ${pedido.marketplaceNome}${pedido.lojaMarketplaceNome ? ` (${pedido.lojaMarketplaceNome})` : ''}`
-      : `🌐 **E-commerce:** ${pedido.lojaNome || 'Loja Própria'}`
+    const origemPedido = describeMagazordOrderOrigin(
+      pedido.origem,
+      pedido.marketplaceNome,
+      pedido.lojaNome,
+    )
+    const canalVenda =
+      Number(pedido.origem) === 2 && pedido.lojaMarketplaceNome
+        ? `${origemPedido.channel} (${pedido.lojaMarketplaceNome})`
+        : origemPedido.channel
 
     const freteCusto = Number(rastreioInfo?.valorFreteTransportadora || 0)
-    const smartInsights = generateInsights(pedido, itensRastreio, freteCusto)
+    const smartInsights = generateOrderInsights(pedido, itensRastreio, freteCusto)
 
     // Dados limpos do cliente e endereço
     const primeiroNome = getFirstName(pedido.pessoaNome)
@@ -143,7 +80,7 @@ export default defineEventHandler(async (event) => {
       embeds: [
         {
           title: truncate(
-            `📦 Pedido #${pedido.codigo} | ${pedido.pedidoSituacaoDescricao}`.toUpperCase(),
+            `${origemPedido.title} #${pedido.codigo} | ${pedido.pedidoSituacaoDescricao}`,
             256,
           ),
           description: truncate(canalVenda, 4096),
@@ -152,6 +89,11 @@ export default defineEventHandler(async (event) => {
             {
               name: '👤 Cliente',
               value: truncate(`**${primeiroNome}**`),
+              inline: true,
+            },
+            {
+              name: '🧭 Origem',
+              value: truncate(origemPedido.label),
               inline: true,
             },
             {
@@ -174,10 +116,28 @@ export default defineEventHandler(async (event) => {
             {
               name: '💰 Fechamento',
               value: truncate(
-                `**Produtos:** ${formatCurrency(pedido.valorProduto)}\n**Frete (Cliente):** ${formatCurrency(pedido.valorFrete)}\n**Descontos:** ${formatCurrency(pedido.valorDesconto)}\n**Total Pago:** **${formatCurrency(pedido.valorTotalFinal ?? pedido.valorTotal)}**`,
+                `**Produtos:** ${formatCurrency(pedido.valorProduto)}\n**Frete (cliente):** ${formatCurrency(pedido.valorFrete)}\n**Descontos:** ${formatCurrency(pedido.valorDesconto)}\n**Acréscimos:** ${formatCurrency(pedido.valorAcrescimo)}\n**Presente:** ${formatCurrency(pedido.valorPresente)}\n**Total pago:** **${formatCurrency(pedido.valorTotalFinal ?? pedido.valorTotal)}**`,
               ),
               inline: true,
             },
+            ...(Number(pedido.origem) === 3
+              ? [
+                  {
+                    name: '👤 Vendedor',
+                    value: truncate(pedido.codigoVendedor || 'Não informado'),
+                    inline: true,
+                  },
+                ]
+              : []),
+            ...(Number(pedido.origem) === 2 && pedido.codigoMarketplace
+              ? [
+                  {
+                    name: '🔗 Código no marketplace',
+                    value: truncate(pedido.codigoMarketplace),
+                    inline: true,
+                  },
+                ]
+              : []),
             {
               name: '💡 Insights da Venda',
               value: truncate(smartInsights),

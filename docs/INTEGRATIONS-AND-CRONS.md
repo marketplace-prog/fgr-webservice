@@ -62,6 +62,7 @@ MagazordPedidoPayload | { payload: MagazordPedidoPayload }
 **Campos principais processados:**
 
 - `codigo`: Código público do pedido (ex: `"11997"`).
+- `origem`: Canal de origem (`1`: site, `2`: marketplace, `3`: manual). A origem aparece explicitamente no título e nos campos do embed; pedidos manuais não são apresentados como e-commerce.
 - `dataHora`: Data e hora da compra (formato Magazord normalizado por `parseMagazordDate`).
 - `pedidoSituacao`: ID numérico do status do pedido (mapeado para cor do Discord por `getStatusColor`).
 - `pedidoSituacaoDescricao`: Descrição legível do status.
@@ -70,6 +71,10 @@ MagazordPedidoPayload | { payload: MagazordPedidoPayload }
 - `formaPagamentoNome`, `condicaoPagamentoNome`, `condicaoPagamentoParcelas`: Dados do checkout.
 - `valorProduto`, `valorFrete`, `valorDesconto`, `valorTotal`, `valorTotalFinal`: Totais monetários formatados por `formatCurrency`.
 - `marketplaceNome`, `lojaMarketplaceNome`, `lojaNome`: Identificação do canal de venda.
+- `codigoVendedor`: Identificação do vendedor em pedidos manuais.
+- `codigoMarketplace`: Referência do pedido original em pedidos de marketplace.
+- `pedidoTrackingSource`: Fonte de tráfego em pedidos do site, quando informada.
+- `valorAcrescimo`, `valorPresente`: Componentes adicionais exibidos no fechamento.
 - `arrayPedidoRastreio[0]`:
   - `valorFreteTransportadora`: Custo real cobrado pela transportadora.
   - `pedidoItem[]`: Lista de produtos (`quantidade`, `produtoNome`, `descricao`, `valorItem`).
@@ -83,7 +88,10 @@ O sistema analisa os dados financeiros e operacionais do pedido e monta um bloco
 3. **Desconto Agressivo:** Emite alerta se o desconto for superior a **15%** do valor dos produtos.
 4. **Cupom de Desconto:** Registra qual cupom garantiu a conversão.
 5. **Volume de Carrinho:** Identifica pedidos de apenas 1 item (oportunidade de cross-sell) ou cestas robustas ($\ge 4$ itens).
-6. **Risco Financeiro / Liquidez:** Destaca vendas via PIX (liquidez imediata) ou compras em $\ge 6\times$ (atenção a custos de antecipação).
+6. **Pagamento e liquidez:** Destaca vendas via PIX (liquidez imediata) ou compras em $\ge 6\times$ (atenção a custos de antecipação).
+7. **Atribuição:** Mostra a fonte de tráfego em pedidos do site e o vendedor em pedidos manuais, quando esses dados existem no payload.
+
+> Os alertas usam somente os dados recebidos no webhook. A ausência de alertas não significa que a margem foi analisada ou que o pedido é necessariamente saudável; o payload não inclui, por exemplo, o custo dos produtos.
 
 ### Efeitos Colaterais & Notificação no Discord
 
