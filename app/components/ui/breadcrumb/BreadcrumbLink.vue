@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils'
 
 const props = withDefaults(defineProps<PrimitiveProps & { class?: HTMLAttributes['class'] }>(), {
   as: 'a',
+  class: '',
 })
 </script>
 

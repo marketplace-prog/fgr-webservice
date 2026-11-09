@@ -36,8 +36,6 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    console.log(`[📦 Webhook Magazord] Processando pedido #${pedido.codigo}`)
-
     // --- Extração de Itens e Rastreio ---
     const rastreioInfo = pedido.arrayPedidoRastreio?.[0]
     const itensRastreio: MagazordPedidoItem[] = rastreioInfo?.pedidoItem || []

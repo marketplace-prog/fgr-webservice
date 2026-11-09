@@ -15,6 +15,7 @@ interface InputGroupButtonProps {
 const props = withDefaults(defineProps<InputGroupButtonProps>(), {
   size: 'xs',
   variant: 'ghost',
+  class: '',
 })
 </script>
 

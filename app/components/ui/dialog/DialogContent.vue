@@ -13,6 +13,7 @@ const props = withDefaults(
   >(),
   {
     showCloseButton: true,
+    class: '',
   },
 )
 

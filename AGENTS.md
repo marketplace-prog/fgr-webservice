@@ -322,19 +322,19 @@ A versão 9 do TanStack Table introduziu o registro granular de funcionalidades 
 
 As variáveis necessárias estão registradas no [.env.example](file:///c:/Users/marke/OneDrive/Desktop/ale/fgr-webservice/.env.example) e configuradas no [nuxt.config.ts](file:///c:/Users/marke/OneDrive/Desktop/ale/fgr-webservice/nuxt.config.ts):
 
-| Variável                        | Escopo         | Descrição                                                                   |
-| :------------------------------ | :------------- | :-------------------------------------------------------------------------- |
-| `PORT`                          | Local          | Porta do servidor de desenvolvimento (ex: 3000)                             |
-| `SUPABASE_URL`                  | Público        | URL do projeto Supabase                                                     |
-| `SUPABASE_KEY`                  | Público        | Anon/Public API Key do Supabase                                             |
+| Variável                        | Escopo         | Descrição                                                                                                                           |
+| :------------------------------ | :------------- | :---------------------------------------------------------------------------------------------------------------------------------- |
+| `PORT`                          | Local          | Porta do servidor de desenvolvimento (ex: 3000)                                                                                     |
+| `SUPABASE_URL`                  | Público        | URL do projeto Supabase                                                                                                             |
+| `SUPABASE_KEY`                  | Público        | Anon/Public API Key do Supabase                                                                                                     |
 | `NUXT_SUPABASE_SECRET_KEY`      | Privado/Server | Chave secreta Supabase para operações internas que bypassam RLS; use `NUXT_SUPABASE_SERVICE_KEY` para chaves legadas `service_role` |
-| `DISCORD_WEBHOOK_NOVOS_PEDIDOS` | Privado/Server | Webhook do Discord para avisos de novas vendas                              |
-| `DISCORD_WEBHOOK_ATUALIZACOES`  | Privado/Server | Webhook do Discord para avisos de alteração de situação                     |
-| `DISCORD_WEBHOOK_ESTOQUE_BAIXO` | Privado/Server | Webhook do Discord para canal de alertas de estoque baixo                   |
-| `MAGAZORD_API_URL`              | Privado/Server | URL base HTTPS da API Magazord (ex: `https://loja.com.br/api`)              |
-| `MAGAZORD_API_TOKEN`            | Privado/Server | Token da API Magazord usado no HTTP Basic Auth                              |
-| `MAGAZORD_API_PASSWORD`         | Privado/Server | Senha da API Magazord usada no HTTP Basic Auth                              |
-| `CRON_SECRET`                   | Privado/Server | _TODO: confirmar com o time_ — Token para proteger a rota do cron da Vercel |
+| `DISCORD_WEBHOOK_NOVOS_PEDIDOS` | Privado/Server | Webhook do Discord para avisos de novas vendas                                                                                      |
+| `DISCORD_WEBHOOK_ATUALIZACOES`  | Privado/Server | Webhook do Discord para avisos de alteração de situação                                                                             |
+| `DISCORD_WEBHOOK_ESTOQUE_BAIXO` | Privado/Server | Webhook do Discord para canal de alertas de estoque baixo                                                                           |
+| `MAGAZORD_API_URL`              | Privado/Server | URL base HTTPS da API Magazord (ex: `https://loja.com.br/api`)                                                                      |
+| `MAGAZORD_API_TOKEN`            | Privado/Server | Token da API Magazord usado no HTTP Basic Auth                                                                                      |
+| `MAGAZORD_API_PASSWORD`         | Privado/Server | Senha da API Magazord usada no HTTP Basic Auth                                                                                      |
+| `CRON_SECRET`                   | Privado/Server | _TODO: confirmar com o time_ — Token para proteger a rota do cron da Vercel                                                         |
 
 ---
 

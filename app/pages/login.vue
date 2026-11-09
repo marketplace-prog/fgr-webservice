@@ -18,7 +18,7 @@ import { useForm, Field as VeeField } from 'vee-validate'
 import { loginSchema } from '~~/shared/schemas/login.schema'
 import { toTypedSchema } from '@vee-validate/zod'
 import { toast } from 'vue-sonner'
-import { Loader, LucideLoaderPinwheel } from '@lucide/vue'
+import { Loader } from '@lucide/vue'
 
 definePageMeta({
   layout: 'no-sidebar',

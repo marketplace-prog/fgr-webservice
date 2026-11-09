@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/sidebar'
 import { toast } from 'vue-sonner'
 
-const props = defineProps<{
+defineProps<{
   user: {
     name: string
     email: string

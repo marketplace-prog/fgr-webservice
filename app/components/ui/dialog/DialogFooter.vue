@@ -11,6 +11,7 @@ const props = withDefaults(
   }>(),
   {
     showCloseButton: false,
+    class: '',
   },
 )
 </script>

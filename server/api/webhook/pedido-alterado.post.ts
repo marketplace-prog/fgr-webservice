@@ -27,10 +27,6 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 400, message: 'Payload inválido' })
     }
 
-    console.log(
-      `[🔄 Webhook Magazord] Atualização no pedido #${pedido.codigo} para o status: ${pedido.pedidoSituacaoDescricao}`,
-    )
-
     // Dados limpos do cliente
     const primeiroNome = getFirstName(pedido.pessoaNome) // Utilizando a util global
     const situacaoCodigo = Number(pedido.pedidoSituacao) || 0
