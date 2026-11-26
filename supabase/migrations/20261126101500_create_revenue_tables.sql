@@ -1,0 +1,135 @@
+-- Criação das tabelas de faturamento por canal (iniciando com 'site')
+-- Inclui RLS para usuários autenticados e seed inicial 2024–2026 (ref: 24/11/2026)
+
+CREATE TABLE IF NOT EXISTS public.revenue_monthly (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  channel TEXT NOT NULL DEFAULT 'site',
+  year INTEGER NOT NULL CHECK (year >= 2000 AND year <= 2100),
+  month INTEGER NOT NULL CHECK (month >= 1 AND month <= 12),
+  revenue NUMERIC(14, 2) NOT NULL DEFAULT 0,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  CONSTRAINT revenue_monthly_channel_year_month_unique UNIQUE (channel, year, month)
+);
+
+CREATE TABLE IF NOT EXISTS public.revenue_daily (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  channel TEXT NOT NULL DEFAULT 'site',
+  year INTEGER NOT NULL CHECK (year >= 2000 AND year <= 2100),
+  month INTEGER NOT NULL CHECK (month >= 1 AND month <= 12),
+  day INTEGER NOT NULL CHECK (day >= 1 AND day <= 31),
+  cumulative_revenue NUMERIC(14, 2),
+  projected_cumulative NUMERIC(14, 2),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  CONSTRAINT revenue_daily_channel_year_month_day_unique UNIQUE (channel, year, month, day)
+);
+
+CREATE TABLE IF NOT EXISTS public.revenue_imports (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  channel TEXT NOT NULL DEFAULT 'site',
+  source_files TEXT[] NOT NULL DEFAULT '{}',
+  note TEXT,
+  reconciled BOOLEAN NOT NULL DEFAULT true,
+  reconcile_diff_count INTEGER NOT NULL DEFAULT 0,
+  imported_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  imported_by UUID REFERENCES auth.users(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_revenue_monthly_channel_year
+  ON public.revenue_monthly (channel, year, month);
+
+CREATE INDEX IF NOT EXISTS idx_revenue_daily_channel_period
+  ON public.revenue_daily (channel, year, month, day);
+
+CREATE INDEX IF NOT EXISTS idx_revenue_imports_channel_date
+  ON public.revenue_imports (channel, imported_at DESC);
+
+-- Row Level Security (RLS)
+ALTER TABLE public.revenue_monthly ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.revenue_daily ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.revenue_imports ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow authenticated users to read revenue_monthly"
+  ON public.revenue_monthly FOR SELECT TO authenticated USING (true);
+
+CREATE POLICY "Allow authenticated users to insert revenue_monthly"
+  ON public.revenue_monthly FOR INSERT TO authenticated WITH CHECK (auth.uid() IS NOT NULL);
+
+CREATE POLICY "Allow authenticated users to update revenue_monthly"
+  ON public.revenue_monthly FOR UPDATE TO authenticated
+  USING (auth.uid() IS NOT NULL) WITH CHECK (auth.uid() IS NOT NULL);
+
+CREATE POLICY "Allow authenticated users to read revenue_daily"
+  ON public.revenue_daily FOR SELECT TO authenticated USING (true);
+
+CREATE POLICY "Allow authenticated users to insert revenue_daily"
+  ON public.revenue_daily FOR INSERT TO authenticated WITH CHECK (auth.uid() IS NOT NULL);
+
+CREATE POLICY "Allow authenticated users to update revenue_daily"
+  ON public.revenue_daily FOR UPDATE TO authenticated
+  USING (auth.uid() IS NOT NULL) WITH CHECK (auth.uid() IS NOT NULL);
+
+CREATE POLICY "Allow authenticated users to read revenue_imports"
+  ON public.revenue_imports FOR SELECT TO authenticated USING (true);
+
+CREATE POLICY "Allow authenticated users to insert revenue_imports"
+  ON public.revenue_imports FOR INSERT TO authenticated WITH CHECK (auth.uid() IS NOT NULL);
+
+-- Seed inicial: faturamento mensal 2024–2026 (Canal Site)
+INSERT INTO public.revenue_monthly (channel, year, month, revenue) VALUES
+  ('site', 2024, 1, 26602.82), ('site', 2024, 2, 23593.77), ('site', 2024, 3, 42568.17),
+  ('site', 2024, 4, 44645.58), ('site', 2024, 5, 63228.15), ('site', 2024, 6, 38938.93),
+  ('site', 2024, 7, 61565.23), ('site', 2024, 8, 45715.11), ('site', 2024, 9, 46206.92),
+  ('site', 2024, 10, 49819.36), ('site', 2024, 11, 60094.47), ('site', 2024, 12, 64281.49),
+  ('site', 2025, 1, 50560.91), ('site', 2025, 2, 38747.52), ('site', 2025, 3, 42520.46),
+  ('site', 2025, 4, 51865.94), ('site', 2025, 5, 65905.48), ('site', 2025, 6, 33514.85),
+  ('site', 2025, 7, 42003.54), ('site', 2025, 8, 36680.91), ('site', 2025, 9, 39673.64),
+  ('site', 2025, 10, 55922.70), ('site', 2025, 11, 41983.06), ('site', 2025, 12, 39014.34),
+  ('site', 2026, 1, 49588.45), ('site', 2026, 2, 73489.59), ('site', 2026, 3, 41736.03),
+  ('site', 2026, 4, 47809.87), ('site', 2026, 5, 44777.55), ('site', 2026, 6, 62490.54),
+  ('site', 2026, 7, 71098.89), ('site', 2026, 8, 56490.91), ('site', 2026, 9, 56003.59),
+  ('site', 2026, 10, 48191.83), ('site', 2026, 11, 38527.11)
+ON CONFLICT (channel, year, month) DO NOTHING;
+
+-- Seed inicial: curvas diárias acumuladas (10/2025 a 11/2026 + projeção 11/2026)
+WITH daily_seed(year, month, cum_arr, proj_arr) AS (
+  VALUES
+    (2025, 10, ARRAY[1784.99,6889.82,17748.16,17748.16,17748.16,20123.16,21275.19,24405.72,24405.72,29556.46,29556.46,29556.46,30414.82,31876.8,37316.56,38438.51,38438.51,38438.51,38438.51,40380.31,43225.0,47019.83,48132.1,49061.33,49061.33,49061.33,49171.0,53856.04,53856.04,55922.7,55922.7]::NUMERIC[], NULL::NUMERIC[]),
+    (2025, 11, ARRAY[0.0,0.0,1162.68,1854.5,4532.35,5534.23,5534.23,5534.23,5534.23,6316.86,13976.23,16201.99,16628.91,19271.62,19271.62,19271.62,19832.44,24302.8,26642.37,26642.37,31747.99,31747.99,31747.99,31872.46,37624.32,39862.27,41983.06,41983.06,41983.06,41983.06,41983.06]::NUMERIC[], NULL::NUMERIC[]),
+    (2025, 12, ARRAY[3504.07,5740.49,6631.67,8121.25,13223.68,13223.68,13223.68,17002.33,18621.3,19489.25,19489.25,21267.95,21267.95,21267.95,24339.13,26069.0,30179.8,34032.71,35589.28,35589.28,35589.28,36275.97,36275.97,36275.97,36275.97,36275.97,36275.97,36275.97,39014.34,39014.34,39014.34]::NUMERIC[], NULL::NUMERIC[]),
+    (2026, 1, ARRAY[0.0,2279.42,2553.52,2553.52,4031.19,4031.19,4423.81,11533.64,13574.74,13574.74,13574.74,15864.7,18602.49,21492.1,27242.1,27242.1,27242.1,27242.1,41646.68,41646.68,42753.1,42753.1,42753.1,42753.1,42753.1,44436.96,47098.88,49588.45,49588.45,49588.45,49588.45]::NUMERIC[], NULL::NUMERIC[]),
+    (2026, 2, ARRAY[0.0,11086.25,15721.5,15721.5,28992.39,31073.19,31073.19,31073.19,37143.91,39441.65,40698.33,43157.97,43826.46,43826.46,43826.46,50801.55,53275.81,57670.89,58075.54,58075.54,58075.54,58075.54,59709.67,68892.0,69767.69,72160.41,73489.59,73489.59,73489.59,73489.59,73489.59]::NUMERIC[], NULL::NUMERIC[]),
+    (2026, 3, ARRAY[0.0,84.54,1164.09,4534.38,6962.04,9966.9,9966.9,9966.9,10912.11,14977.54,18839.97,18839.97,19798.38,19798.38,19798.38,21165.59,21165.59,21165.59,22511.37,26820.92,26820.92,26820.92,27517.85,31037.57,35468.37,35468.37,36189.02,36189.02,36189.02,41736.03,41736.03]::NUMERIC[], NULL::NUMERIC[]),
+    (2026, 4, ARRAY[255.97,451.84,451.84,451.84,451.84,1226.01,4715.54,9604.52,10510.55,11710.25,11710.25,11710.25,13473.27,13473.27,13711.6,13711.6,20916.02,20916.02,20916.02,24579.13,24579.13,32057.92,34688.61,37440.76,37440.76,37440.76,38060.18,43628.62,47417.17,47809.87,47809.87]::NUMERIC[], NULL::NUMERIC[]),
+    (2026, 5, ARRAY[0.0,0.0,0.0,4646.56,4273.18,5355.96,7307.66,3568.98,3568.98,3568.98,6126.68,6575.94,13519.99,21933.2,25521.06,25521.06,25521.06,26001.88,34266.65,35925.31,36305.95,37971.61,37971.61,37971.61,38698.86,40192.53,42629.08,44777.55,44777.55,44777.55,44777.55]::NUMERIC[], NULL::NUMERIC[]),
+    (2026, 6, ARRAY[41.51,242.38,5953.69,5953.69,7419.82,7419.82,7419.82,8007.03,8435.83,15134.38,17755.99,19594.33,19594.33,19594.33,19594.33,38391.47,42422.09,43610.81,44410.01,44410.01,44410.01,52165.65,55656.7,60280.12,60280.12,60280.12,60280.12,60280.12,62490.54,62490.54,62490.54]::NUMERIC[], NULL::NUMERIC[]),
+    (2026, 7, ARRAY[1999.8,3463.78,11435.31,11435.31,11435.31,11435.31,14362.81,18802.81,19646.83,22819.78,22819.78,22819.78,26688.23,27851.56,33210.61,33210.61,42898.21,42898.21,42898.21,47596.73,52155.99,57939.03,60783.29,60783.29,60783.29,60783.29,64870.7,70819.01,71098.89,71098.89,71098.89]::NUMERIC[], NULL::NUMERIC[]),
+    (2026, 8, ARRAY[0.0,0.0,2953.22,9509.21,12655.68,17547.34,19833.12,19833.12,19833.12,22232.64,22232.64,22232.64,28297.01,26041.29,26041.29,26041.29,34996.14,34996.14,38036.88,38942.72,42579.13,42579.13,42579.13,46091.64,46469.2,47421.6,51203.94,53260.77,53260.77,53260.77,56490.91]::NUMERIC[], NULL::NUMERIC[]),
+    (2026, 9, ARRAY[0.0,1706.31,3640.22,5462.32,5462.32,5462.32,5462.32,9477.94,14931.06,14931.06,18860.91,18860.91,18860.91,25711.65,27142.06,28038.69,33304.4,34394.82,34394.82,34394.82,44167.07,48236.62,49657.74,49657.74,52157.72,52157.72,52157.72,53870.69,53870.69,56003.59,56003.59]::NUMERIC[], NULL::NUMERIC[]),
+    (2026, 10, ARRAY[0.0,1604.88,1604.88,1604.88,1604.88,8378.13,12603.54,15882.31,17406.44,17406.44,17406.44,17406.44,23800.55,25510.17,25942.89,25942.89,25942.89,25942.89,29175.43,29694.02,30708.17,32311.45,35008.45,35008.45,35008.45,39446.21,45172.26,48191.83,48191.83,48191.83,48191.83]::NUMERIC[], NULL::NUMERIC[]),
+    (2026, 11, ARRAY[0.0,0.0,3799.77,3799.77,14004.47,14004.47,14004.47,14004.47,16693.73,16693.73,23256.84,24693.41,25946.16,25946.16,25946.16,29117.82,28084.31,29562.63,29562.63,29562.63,29562.63,29562.63,37651.14,38527.11,NULL,NULL,NULL,NULL,NULL,NULL,NULL]::NUMERIC[], ARRAY[48408.66,51098.03,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,40340.55,43029.92,45719.29,48408.66,48408.66,48408.66,51098.03,NULL]::NUMERIC[])
+)
+INSERT INTO public.revenue_daily (channel, year, month, day, cumulative_revenue, projected_cumulative)
+SELECT
+  'site',
+  ds.year,
+  ds.month,
+  d.day_num,
+  ds.cum_arr[d.day_num],
+  CASE WHEN ds.proj_arr IS NOT NULL THEN ds.proj_arr[d.day_num] ELSE NULL END
+FROM daily_seed ds
+CROSS JOIN generate_series(1, 31) AS d(day_num)
+WHERE ds.cum_arr[d.day_num] IS NOT NULL
+   OR (ds.proj_arr IS NOT NULL AND ds.proj_arr[d.day_num] IS NOT NULL)
+ON CONFLICT (channel, year, month, day) DO NOTHING;
+
+INSERT INTO public.revenue_imports (channel, source_files, note, reconciled, reconcile_diff_count, imported_at)
+VALUES (
+  'site',
+  ARRAY['faturamento-por-ano.csv', 'faturamento-por-mes.csv'],
+  'Conciliação 100,0% exata entre os dois arquivos originais (R$ 0,00 de divergência).',
+  true,
+  0,
+  '2026-11-24T12:00:00Z'
+);

@@ -12,6 +12,7 @@ O **`fgr-webservice`** (FGR Sports) é um monorail fullstack construído em **Nu
 1. **Hub de Integração de E-commerce (Magazord ➔ Discord):** Recebe webhooks da plataforma Magazord (novos pedidos e atualizações de situação), processa regras de negócio gerando insights estratégicos (viabilidade de frete, risco de inadimplência, cupom, cross-sell) e despacha alertas ricos via Discord Embeds.
 2. **Painel Administrativo & Gestão de Estoque:** Aplicação interna autenticada via Supabase para monitorar níveis mínimos de estoque de SKUs e alertar a equipe quando houver necessidade de reposição.
 3. **Landing pages públicas:** Captura de leads por páginas `/lp/[slug]`, com cadastro server-side no Supabase e distribuição como Web Component.
+4. **Integração futura Firebird:** base privada de configuração Nitro e contratos TypeScript em `shared/types/firebird.ts`; ainda sem driver, conexão ou modelos de tabelas.
 
 **Nicho:** esporte e equipamentos esportivos. A identidade visual FGR usa azul `#035096` como cor primária e laranja `#fe3e00` como cor de destaque, registrados como tokens semânticos em `app/assets/css/tailwind.css`.
 
@@ -33,6 +34,7 @@ Valores extraídos diretamente de [package.json](file:///c:/Users/marke/OneDrive
 | **reka-ui**                   | `^2.11.0`                        | Primitivas headless acessíveis (Radix Vue)   |
 | **@lucide/vue**               | `^1.57.0`                        | Ícones SVG                                   |
 | **@tanstack/vue-table**       | `^9.2.4`                         | Tabelas headless v9 com tree-shaking         |
+| **echarts** / **vue-echarts** | `^6.1.0` / `^8.3.2`              | Gráficos analíticos interativos              |
 | **vee-validate**              | `^4.15.1`                        | Gerenciamento de formulários                 |
 | **zod**                       | `^4.6.5`                         | Schemas de validação e inferência de tipos   |
 | **@vee-validate/zod**         | `^4.15.1`                        | Adaptador typed schema                       |
@@ -85,6 +87,7 @@ fgr-webservice/
 │   │   ├── NavUser.vue             # Perfil do usuário e ação de logout
 │   │   ├── ResponsiveModal.vue     # Modal híbrido (Dialog no desktop, Drawer no mobile)
 │   │   ├── monitored-inventory/    # Componentes da tela de estoque (tabela, forms)
+│   │   ├── reports/revenue/        # Componentes do painel de faturamento (ECharts, abas, importação)
 │   │   └── ui/                     # Primitivas shadcn-nuxt / Reka UI
 │   ├── layouts/                    # Layouts Nuxt (default.vue com sidebar, NoSidebar.vue)
 │   ├── lib/utils.ts                # Utilitário central cn()
@@ -94,6 +97,8 @@ fgr-webservice/
 │   │   ├── lp/[slug].vue           # Landing pages públicas
 │   │   └── inventory/              # Gestão de inventário
 │   │       └── monitored-inventory.vue
+│   │   └── reports/                # Relatórios e análises
+│   │       └── revenue.vue         # Painel de faturamento (Canal Site)
 │   ├── components/landing/         # Componentes das landing pages
 │   │   ├── index.ts                # Barrel com exports nomeados e default
 │   │   └── LeadCaptureForm.vue     # Formulário compartilhado
@@ -125,8 +130,9 @@ fgr-webservice/
 │       └── stock-service.ts        # Serviço de consulta de estoque e alertas Discord
 ├── shared/                         # Código compartilhado (auto-importado no app e server)
 │   ├── schemas/                    # Schemas Zod de validação (inventory, login)
-│   ├── types/                      # Tipagens TypeScript (magazord.ts, database.types.ts)
+│   ├── types/                      # Tipagens TypeScript (magazord.ts, firebird.ts, database.types.ts)
 │   └── utils/                      # Funções utilitárias puras (magazord.ts)
+├── scripts/                        # Scripts de manutenção de schemas externos
 ├── supabase/                       # Migrações e esquemas do Supabase
 │   └── migrations/
 │       └── 20261019_create_stock_monitors.sql # Tabela stock_monitors com RLS
@@ -334,6 +340,13 @@ As variáveis necessárias estão registradas no [.env.example](file:///c:/Users
 | `MAGAZORD_API_URL`              | Privado/Server | URL base HTTPS da API Magazord (ex: `https://loja.com.br/api`)                                                                      |
 | `MAGAZORD_API_TOKEN`            | Privado/Server | Token da API Magazord usado no HTTP Basic Auth                                                                                      |
 | `MAGAZORD_API_PASSWORD`         | Privado/Server | Senha da API Magazord usada no HTTP Basic Auth                                                                                      |
+| `FIREBIRD_HOST`                 | Privado/Server | Host do servidor Firebird                                                                                                           |
+| `FIREBIRD_PORT`                 | Privado/Server | Porta TCP do servidor Firebird (padrão `3050`)                                                                                      |
+| `FIREBIRD_DATABASE`             | Privado/Server | Caminho/alias do banco no servidor Firebird                                                                                         |
+| `FIREBIRD_USER`                 | Privado/Server | Usuário do banco Firebird                                                                                                           |
+| `FIREBIRD_PASSWORD`             | Privado/Server | Senha do usuário Firebird                                                                                                           |
+| `FIREBIRD_ROLE`                 | Privado/Server | Role Firebird opcional                                                                                                              |
+| `FIREBIRD_CHARSET`              | Privado/Server | Charset da conexão (padrão `UTF8`)                                                                                                  |
 | `CRON_SECRET`                   | Privado/Server | _TODO: confirmar com o time_ — Token para proteger a rota do cron da Vercel                                                         |
 
 ---
@@ -351,6 +364,8 @@ As variáveis necessárias estão registradas no [.env.example](file:///c:/Users
 - ✅ Autentique todas as chamadas REST à Magazord com `Authorization: Basic ${base64(token + ':' + senha)}` e use exclusivamente HTTPS. Mantenha token e senha em variáveis privadas do servidor; nunca registre o header ou as credenciais em logs.
 - ✅ Trunque campos de embeds do Discord usando `truncate()` para nunca estourar o limite de 1024 caracteres da API.
 - ✅ Para leads públicos, valide novamente no Nitro, grave usando a service role somente no servidor e nunca exponha leitura pública dos cadastros.
+- ✅ Mantenha credenciais Firebird em variáveis privadas `FIREBIRD_*`; adicione modelos de negócio somente após confirmar o schema real.
+- ✅ Atualize os schemas Firebird com `bun run generate:firebird-schemas`; a geração lê somente metadados do catálogo.
 
 ### DON'T (Não Faça)
 

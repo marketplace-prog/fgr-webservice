@@ -29,6 +29,7 @@ flowchart TD
             WebComponent["web-components/redes-de-futebol.ts"]
             LoginView["app/pages/login.vue"]
             InventoryView["app/pages/inventory/monitored-inventory.vue"]
+            RevenueView["app/pages/reports/revenue.vue"]
             UIPrims["app/components/ui (shadcn / Reka UI)"]
             TanStackTable["@tanstack/vue-table v9 (features.ts)"]
         end
@@ -54,6 +55,7 @@ flowchart TD
         DiscordVendas["Discord Webhook (Canal Novos Pedidos)"]
         DiscordStatus["Discord Webhook (Canal Atualizações)"]
         DiscordEstoque["Discord Webhook (Canal Alertas de Estoque)"]
+        FirebirdDB["Banco Firebird (integração futura)"]
         SupabaseAuth["Supabase Auth (Sessões / JWT)"]
         SupabaseDB["Supabase Postgres (stock_monitors + RLS)"]
         LeadsDB["Supabase Postgres (landing_page_leads + RLS)"]
@@ -122,6 +124,7 @@ flowchart TD
   - Geração de regras e insights de venda.
   - Formatação e despacho de embeds para a API do Discord.
   - Execução de tarefas agendadas de auditoria de estoque (Crons).
+  - Base tipada para futura integração server-side com Firebird.
   - Health check da infraestrutura.
 
 ### 2.3 Camada Compartilhada (`shared/`)
@@ -141,6 +144,18 @@ flowchart TD
 - **Persistência:** `public.landing_page_leads`, com RLS habilitado, leitura apenas por usuários com `app_metadata.role = 'admin'` e sem escrita direta pelo navegador.
 - **Web Component:** `web-components/redes-de-futebol.ts` gera `public/web-components/redes-de-futebol.js` durante o build. O elemento `<redes-de-futebol>` incorpora a landing em iframe; o atributo `base-url` permite definir a origem do serviço. O CTA do hero solicita a rolagem da página hospedeira até o formulário por `postMessage`, validado pela origem e pelo iframe remetente.
 - **Conversão:** o navegador só segue para o WhatsApp após confirmação da gravação do lead.
+
+### 2.5 Base tipada para Firebird
+
+- **Configuração:** as credenciais ficam em variáveis privadas `FIREBIRD_*`, disponíveis somente
+  em `runtimeConfig.firebird`.
+- **Acesso:** o driver `node-firebird` é usado no servidor e no gerador de schemas; as credenciais
+  ficam em variáveis privadas do runtime.
+- **Contratos:** `shared/types/firebird.ts` concentra tipos de conexão, valores e parâmetros SQL,
+  metadados, resultados, transações e erros. `shared/schemas/firebird.schema.ts` contém schemas
+  Zod gerados a partir do catálogo do banco.
+- **Atualização:** `bun run generate:firebird-schemas` atualiza os schemas sem consultar dados de
+  negócio.
 
 ---
 

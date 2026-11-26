@@ -14,6 +14,7 @@
     "test": "bun test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "generate:firebird-schemas": "bun run scripts/generate-firebird-schemas.ts",
     "typecheck": "nuxt typecheck"
   },
   "dependencies": {
@@ -26,12 +27,15 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cn": "^0.4.0",
+    "echarts": "^6.1.0",
+    "node-firebird": "2.21.0",
     "nuxt": "^4.5.2",
     "reka-ui": "^2.11.0",
     "shadcn-nuxt": "2.8.2",
     "tailwind-merge": "^3.7.0",
     "vee-validate": "^4.15.1",
     "vue": "^3.5.42",
+    "vue-echarts": "^8.3.2",
     "vue-router": "^5.3.0",
     "vue-sonner": "^2.0.9",
     "zod": "^4.6.5"

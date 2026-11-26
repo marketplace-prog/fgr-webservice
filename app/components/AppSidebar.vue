@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { SidebarProps } from '@/components/ui/sidebar'
 
-import { Command, LifeBuoy, Send, SquareTerminal } from '@lucide/vue'
+import { BarChart3, Command, LifeBuoy, Send, SquareTerminal } from '@lucide/vue'
 
 import NavMain from '@/components/NavMain.vue'
 import NavSecondary from '@/components/NavSecondary.vue'
@@ -34,20 +34,18 @@ const data = {
       url: '/inventory/monitored-inventory',
       icon: SquareTerminal,
       isActive: true,
-      // items: [
-      //   {
-      //     title: "History",
-      //     url: "#",
-      //   },
-      //   {
-      //     title: "Starred",
-      //     url: "#",
-      //   },
-      //   {
-      //     title: "Settings",
-      //     url: "#",
-      //   },
-      // ],
+    },
+    {
+      title: 'Relatórios / Análises',
+      url: '/reports/revenue',
+      icon: BarChart3,
+      isActive: true,
+      items: [
+        {
+          title: 'Faturamento (Site)',
+          url: '/reports/revenue',
+        },
+      ],
     },
     // {
     //   title: "Models",

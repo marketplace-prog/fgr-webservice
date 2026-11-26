@@ -117,6 +117,105 @@ export interface Database {
         }
         Relationships: []
       }
+      revenue_monthly: {
+        Row: {
+          id: string
+          channel: string
+          year: number
+          month: number
+          revenue: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          channel?: string
+          year: number
+          month: number
+          revenue: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          channel?: string
+          year?: number
+          month?: number
+          revenue?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      revenue_daily: {
+        Row: {
+          id: string
+          channel: string
+          year: number
+          month: number
+          day: number
+          cumulative_revenue: number | null
+          projected_cumulative: number | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          channel?: string
+          year: number
+          month: number
+          day: number
+          cumulative_revenue?: number | null
+          projected_cumulative?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          channel?: string
+          year?: number
+          month?: number
+          day?: number
+          cumulative_revenue?: number | null
+          projected_cumulative?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      revenue_imports: {
+        Row: {
+          id: string
+          channel: string
+          source_files: string[]
+          note: string | null
+          reconciled: boolean
+          reconcile_diff_count: number
+          imported_at: string
+          imported_by: string | null
+        }
+        Insert: {
+          id?: string
+          channel?: string
+          source_files?: string[]
+          note?: string | null
+          reconciled?: boolean
+          reconcile_diff_count?: number
+          imported_at?: string
+          imported_by?: string | null
+        }
+        Update: {
+          id?: string
+          channel?: string
+          source_files?: string[]
+          note?: string | null
+          reconciled?: boolean
+          reconcile_diff_count?: number
+          imported_at?: string
+          imported_by?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
