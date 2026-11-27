@@ -25,6 +25,22 @@ export default defineNuxtConfig({
       apiToken: process.env.MAGAZORD_API_TOKEN || '',
       apiPassword: process.env.MAGAZORD_API_PASSWORD || '',
     },
+    firebird: {
+      host: process.env.FIREBIRD_HOST || '',
+      port: Number(process.env.FIREBIRD_PORT || 3050),
+      database: process.env.FIREBIRD_DATABASE || '',
+      user: process.env.FIREBIRD_USER || '',
+      password: process.env.FIREBIRD_PASSWORD || '',
+      role: process.env.FIREBIRD_ROLE || '',
+      charset: process.env.FIREBIRD_CHARSET || 'UTF8',
+    },
+    mercadolivre: {
+      clientId: process.env.ML_CLIENT_ID || '',
+      clientSecret: process.env.ML_CLIENT_SECRET || '',
+      redirectUri:
+        process.env.ML_REDIRECT_URI ||
+        'https://fgr-webservice.vercel.app/api/mercadolivre/callback',
+    },
     public: {
       supabaseUrl: process.env.SUPABASE_URL,
       supabaseKey: process.env.SUPABASE_KEY,

@@ -15,6 +15,32 @@
 | **Health Check**                 | `/api/health`                      | `GET`  | Monitoramento externo / Uptime        | Nenhuma (Pública)                          | Retorna `{ status: 'ok', time }`                |
 | **Cadastro de lead da landing**  | `/api/public/landing-leads`        | `POST` | Landing pública / Web Component       | Validação Zod server-side + service role   | Grava lead em `landing_page_leads`              |
 | **Rastreio de Frete Storefront** | `public/track-shipping-request.js` | N/A    | Script no browser do cliente          | Nenhuma                                    | Evento `calculate_shipping` no GA4 dataLayer    |
+| **OAuth Mercado Livre**          | `/api/mercadolivre/auth-url` e `/api/mercadolivre/callback` | `GET` | Painel Web (Autenticado) | Sessão Supabase + cookie `ml_oauth_state` | Salva tokens OAuth em `ml_connections` e sincroniza |
+| **Dashboard & Sync Mercado Livre** | `/api/mercadolivre/dashboard` (`GET`) / `/api/mercadolivre/sync` (`POST`) | `GET`/`POST` | Painel Web (Autenticado) | Sessão Supabase | Consulta/atualiza pedidos, anúncios, ADS e canal `mercadolivre` |
+| **Sync Mercado Livre (Cron)**    | `/api/cron/sync-mercadolivre`      | `GET`  | Vercel Cron (`0 11 * * *`, 08:00 BRT) | `serverSupabaseServiceRole`                | Sincroniza últimos 14 dias do ML e atualiza faturamento |
+
+## Base de integração Firebird
+
+- **Driver:** `node-firebird` conecta ao banco no servidor Nitro e no script de geração.
+- **Schemas:** `shared/schemas/firebird.schema.ts` contém um schema Zod para cada tabela de usuário
+  encontrada no catálogo. Os campos mantêm os nomes originais em maiúsculas do banco; campos
+  anuláveis aceitam `null`. `FirebirdTableRow<'PRODUTO'>` infere o tipo de uma tabela.
+- **Atualização dos schemas:** execute `bun run generate:firebird-schemas` com as variáveis
+  `FIREBIRD_*` configuradas no ambiente. O script lê apenas os catálogos de sistema (não registros
+  de negócio) e exclui tabelas de sistema e views.
+- **Contratos TypeScript:** `shared/types/firebird.ts` define configuração de conexão,
+  valores/parâmetros SQL, resultados, metadados de tabelas/índices/chaves estrangeiras e
+  procedures, transações e erros.
+- **Configuração privada do servidor:** `FIREBIRD_HOST`, `FIREBIRD_PORT`,
+  `FIREBIRD_DATABASE`, `FIREBIRD_USER`, `FIREBIRD_PASSWORD`, `FIREBIRD_ROLE` e
+  `FIREBIRD_CHARSET` são carregados pelo `runtimeConfig.firebird`. Não os mova para
+  `runtimeConfig.public`, nem inclua valores reais em arquivos versionados.
+- **Inventário atual:** o banco consultado expõe 385 tabelas de usuário com 8.451 colunas. As
+  validações são baseadas nos tipos e nulabilidade reportados pelo catálogo Firebird; constraints
+  entre linhas, regras de negócio e tabelas futuras precisam ser validadas separadamente.
+- **Acesso de rede:** o host Firebird precisa estar acessível a partir do runtime Nitro. Em deploy
+  serverless, valide conectividade e disponibilidade do arquivo do banco no ambiente de execução
+  antes de implementar operações.
 
 ## Cadastro de Lead — Landing Page de Redes
 

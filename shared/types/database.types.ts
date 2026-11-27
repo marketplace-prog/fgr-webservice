@@ -216,6 +216,231 @@ export interface Database {
         }
         Relationships: []
       }
+      ml_connections: {
+        Row: {
+          id: string
+          seller_id: number
+          nickname: string
+          site_id: string
+          access_token: string
+          refresh_token: string
+          token_type: string
+          scope: string | null
+          expires_at: string
+          reputation_level_id: string | null
+          power_seller_status: string | null
+          reputation_metrics: Json
+          last_synced_at: string | null
+          last_sync_status: string | null
+          last_sync_error: string | null
+          connected_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          seller_id: number
+          nickname: string
+          site_id?: string
+          access_token: string
+          refresh_token: string
+          token_type?: string
+          scope?: string | null
+          expires_at: string
+          reputation_level_id?: string | null
+          power_seller_status?: string | null
+          reputation_metrics?: Json
+          last_synced_at?: string | null
+          last_sync_status?: string | null
+          last_sync_error?: string | null
+          connected_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          seller_id?: number
+          nickname?: string
+          site_id?: string
+          access_token?: string
+          refresh_token?: string
+          token_type?: string
+          scope?: string | null
+          expires_at?: string
+          reputation_level_id?: string | null
+          power_seller_status?: string | null
+          reputation_metrics?: Json
+          last_synced_at?: string | null
+          last_sync_status?: string | null
+          last_sync_error?: string | null
+          connected_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ml_orders: {
+        Row: {
+          id: string
+          order_id: number
+          seller_id: number
+          pack_id: number | null
+          date_created: string
+          date_closed: string | null
+          status: string
+          currency_id: string
+          total_amount: number
+          paid_amount: number
+          sale_fee: number
+          shipping_cost: number
+          net_amount: number
+          logistic_type: string | null
+          shipping_status: string | null
+          items: Json
+          buyer_nickname: string | null
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          order_id: number
+          seller_id: number
+          pack_id?: number | null
+          date_created: string
+          date_closed?: string | null
+          status: string
+          currency_id?: string
+          total_amount?: number
+          paid_amount?: number
+          sale_fee?: number
+          shipping_cost?: number
+          net_amount?: number
+          logistic_type?: string | null
+          shipping_status?: string | null
+          items?: Json
+          buyer_nickname?: string | null
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          order_id?: number
+          seller_id?: number
+          pack_id?: number | null
+          date_created?: string
+          date_closed?: string | null
+          status?: string
+          currency_id?: string
+          total_amount?: number
+          paid_amount?: number
+          sale_fee?: number
+          shipping_cost?: number
+          net_amount?: number
+          logistic_type?: string | null
+          shipping_status?: string | null
+          items?: Json
+          buyer_nickname?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ml_items: {
+        Row: {
+          id: string
+          item_id: string
+          seller_id: number
+          sku: string | null
+          title: string
+          status: string
+          price: number
+          available_quantity: number
+          sold_quantity: number
+          listing_type_id: string | null
+          logistic_type: string | null
+          permalink: string | null
+          thumbnail: string | null
+          health: number | null
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          item_id: string
+          seller_id: number
+          sku?: string | null
+          title: string
+          status: string
+          price?: number
+          available_quantity?: number
+          sold_quantity?: number
+          listing_type_id?: string | null
+          logistic_type?: string | null
+          permalink?: string | null
+          thumbnail?: string | null
+          health?: number | null
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          item_id?: string
+          seller_id?: number
+          sku?: string | null
+          title?: string
+          status?: string
+          price?: number
+          available_quantity?: number
+          sold_quantity?: number
+          listing_type_id?: string | null
+          logistic_type?: string | null
+          permalink?: string | null
+          thumbnail?: string | null
+          health?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ml_ads_daily: {
+        Row: {
+          id: string
+          seller_id: number
+          date: string
+          cost: number
+          clicks: number
+          prints: number
+          direct_amount: number
+          indirect_amount: number
+          total_amount: number
+          acos: number | null
+          roas: number | null
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          seller_id: number
+          date: string
+          cost?: number
+          clicks?: number
+          prints?: number
+          direct_amount?: number
+          indirect_amount?: number
+          total_amount?: number
+          acos?: number | null
+          roas?: number | null
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          seller_id?: number
+          date?: string
+          cost?: number
+          clicks?: number
+          prints?: number
+          direct_amount?: number
+          indirect_amount?: number
+          total_amount?: number
+          acos?: number | null
+          roas?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

@@ -45,6 +45,10 @@ const data = {
           title: 'Faturamento (Site)',
           url: '/reports/revenue',
         },
+        {
+          title: 'Mercado Livre',
+          url: '/reports/mercadolivre',
+        },
       ],
     },
     // {

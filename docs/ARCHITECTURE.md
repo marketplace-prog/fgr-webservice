@@ -30,6 +30,7 @@ flowchart TD
             LoginView["app/pages/login.vue"]
             InventoryView["app/pages/inventory/monitored-inventory.vue"]
             RevenueView["app/pages/reports/revenue.vue"]
+            MlView["app/pages/reports/mercadolivre.vue"]
             UIPrims["app/components/ui (shadcn / Reka UI)"]
             TanStackTable["@tanstack/vue-table v9 (features.ts)"]
         end
@@ -39,6 +40,7 @@ flowchart TD
             LeadAPI["server/api/public/landing-leads.post.ts"]
             WebhookNovo["server/api/webhook/pedido-registrado.post.ts"]
             WebhookStatus["server/api/webhook/pedido-alterado.post.ts"]
+            MlAPI["server/api/mercadolivre/*"]
             CronStock["app/server/api/cron/check-stock.ts*"]
             InsightsEngine["Regras de Negócio & Insights (generateInsights)"]
         end

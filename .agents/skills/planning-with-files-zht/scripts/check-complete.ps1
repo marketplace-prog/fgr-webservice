@@ -1,0 +1,118 @@
+﻿# 檢查 task_plan.md 中所有階段是否完成
+# 始終以退出碼 0 結束 — 使用標準輸出回報狀態
+# 由 Stop 鉤子呼叫以回報任務完成狀態
+
+param(
+    [string]$PlanFile = "task_plan.md",
+    [switch]$Validate
+)
+
+if ($Validate) {
+    if (-not (Test-Path -LiteralPath $PlanFile -PathType Leaf)) { Write-Output '[planning-with-files] Plan format invalid: task_plan.md was not found.'; exit 1 }
+}
+
+# issue #195: per-invocation opt-out (PLANNING_DISABLED=1) for one-shot/CI
+# sessions that share a cwd with a plan but never opted into it.
+if ($env:PLANNING_DISABLED -eq '1' -and -not $Validate) { exit 0 }
+
+if (-not $Validate -and -not (Test-Path -LiteralPath $PlanFile)) {
+    # Automatic gate checks have nothing to report without a plan; the explicit report keeps its notice.
+    if ($Gate) { exit 0 }
+    Write-Host '[planning-with-files] 未找到 task_plan.md — 沒有進行中的規劃會話。'
+    exit 0
+}
+
+# 讀取檔案內容
+try {
+    $content = Get-Content -LiteralPath $PlanFile -Raw -Encoding UTF8 -ErrorAction Stop
+} catch {
+    Write-Output '[planning-with-files] Plan read error: phase completion unavailable.'
+    if ($Validate) { exit 1 }
+    exit 0
+}
+
+# 計算階段總數
+# Count native statuses inside real phases, excluding fenced examples (#377).
+$counts = @{ total = 0; complete = 0; in_progress = 0; pending = 0 }
+$phase = $null
+$invalid = $false
+$activeHeading = ""
+$fence = ""
+$fenceLength = 0
+$malformedHeading = $false
+function Complete-Phase {
+    if ($null -ne $script:phase) {
+        if ($script:phase.Statuses.Count -ne 1) { $script:invalid = $true }
+        else {
+            $state = $script:phase.Statuses[0]
+            if ($state -ne 'in_progress') { $script:counts[$state]++ }
+        }
+        if ($script:phase.Statuses -contains 'in_progress') {
+            $script:counts.in_progress++
+            if (-not $script:activeHeading) { $script:activeHeading = $script:phase.Heading }
+        }
+    }
+    $script:phase = $null
+}
+foreach ($line in (($content -creplace '^\uFEFF', '') -split '\r?\n')) {
+    if ($fence) {
+        if ($line -match ('^ {0,3}' + [regex]::Escape($fence) + '{' + $fenceLength + ',}[ \t]*$')) { $fence = "" }
+        continue
+    }
+    if ($line -match '^ {0,3}(`{3,}|~{3,})' -and
+        ($Matches[1][0] -eq '~' -or -not $line.Substring($Matches[0].Length).Contains('`'))) {
+        $fence = $Matches[1].Substring(0, 1); $fenceLength = $Matches[1].Length
+        continue
+    }
+    if ($line -match '^ {0,3}>') { continue }
+    if ($line -cmatch '^ {0,3}### 階段(?:[0-9:]|-[0-9])') {
+        Complete-Phase
+        $malformedHeading = $true
+        continue
+    }
+    if ($line -cmatch '^ {0,3}### 階段(?:[ \t]|$)') {
+        Complete-Phase
+        $counts.total++
+        $phase = @{ Heading = $line; Statuses = @() }
+    } elseif ($line -match '^ {0,3}#{1,3}(?:[ \t]|$)') {
+        Complete-Phase
+    }
+    if ($null -ne $phase) {
+        foreach ($match in [regex]::Matches($line, '\*\*狀態：\*\*[ \t]+(pending|in_progress|complete)(?![A-Za-z0-9_])|\[(pending|in_progress|complete)\]')) {
+            $state = $match.Groups[1].Value
+            if (-not $state) { $state = $match.Groups[2].Value }
+            $phase.Statuses += $state
+        }
+    }
+}
+Complete-Phase
+$TOTAL = $counts.total
+$COMPLETE = $counts.complete
+$IN_PROGRESS = $counts.in_progress
+$PENDING = $counts.pending
+
+if ($Validate) {
+    if ($TOTAL -eq 0 -or $invalid -or $fence -or $malformedHeading) {
+        Write-Output '[planning-with-files] Plan format invalid: use ### 階段 headings with exactly one native status per phase.'
+        exit 1
+    }
+    Write-Output ('[planning-with-files] Plan format valid (' + $TOTAL + ' phases).')
+    exit 0
+}
+
+if ($fence -or $malformedHeading) {
+    Write-Output '[planning-with-files] Plan format error: phase completion unavailable.'
+} elseif ($TOTAL -eq 0) {
+    exit 0
+} elseif ($COMPLETE -eq $TOTAL) {
+    Write-Host ('[planning-with-files] 所有階段已完成（' + $COMPLETE + '/' + $TOTAL + '）。如果使用者有額外工作，請在開始前於 task_plan.md 中新增階段。')
+} else {
+    Write-Host ('[planning-with-files] 任務進行中（' + $COMPLETE + '/' + $TOTAL + ' 個階段已完成）。停止前請更新 progress.md。')
+    if ($IN_PROGRESS -gt 0) {
+        Write-Host ('[planning-with-files] ' + $IN_PROGRESS + ' 個階段仍在進行中。')
+    }
+    if ($PENDING -gt 0) {
+        Write-Host ('[planning-with-files] ' + $PENDING + ' 個階段待處理。')
+    }
+}
+exit 0
