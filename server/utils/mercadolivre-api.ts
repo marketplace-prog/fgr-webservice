@@ -32,6 +32,22 @@ export interface MlUserProfile {
   }
 }
 
+function getMlTokenExpiresAt(expiresIn: number): string {
+  const expiresAtMs = Date.now() + expiresIn * 1000
+  const expiresAt = new Date(expiresAtMs)
+
+  if (
+    !Number.isFinite(expiresIn) ||
+    expiresIn <= 0 ||
+    !Number.isFinite(expiresAtMs) ||
+    Number.isNaN(expiresAt.getTime())
+  ) {
+    throw new Error('O Mercado Livre retornou um prazo de expiração inválido para o token.')
+  }
+
+  return expiresAt.toISOString()
+}
+
 export function getMlOAuthConfig() {
   const config = useRuntimeConfig()
   const clientId = String(config.mercadolivre?.clientId || '').trim()
@@ -174,7 +190,7 @@ export async function ensureValidMlAccessToken(
   }
 
   const refreshed = await refreshMlTokens(connection.refresh_token)
-  const nextExpiresAt = new Date(Date.now() + refreshed.expires_in * 1000).toISOString()
+  const nextExpiresAt = getMlTokenExpiresAt(refreshed.expires_in)
 
   const { error } = await supabase
     .from('ml_connections')

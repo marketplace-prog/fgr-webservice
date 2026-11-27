@@ -1,10 +1,13 @@
 import { describe, expect, test } from 'bun:test'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import {
   createPaginatedRowModel,
   rowPaginationFeature,
   tableFeatures,
   useTable,
 } from '@tanstack/vue-table'
+import { ensureValidMlAccessToken } from '../server/utils/mercadolivre-api'
+import type { Database } from '../shared/types/database.types'
 import {
   aggregateMlDashboard,
   classifyLogisticType,
@@ -62,6 +65,78 @@ describe('Mercado Livre utils', () => {
     expect(getNextMlOrderOffset(0, 500, 620)).toBe(500)
     expect(getNextMlOrderOffset(500, 120, 620)).toBeNull()
     expect(getNextMlOrderOffset(500, 0, 620)).toBeNull()
+  })
+
+  test('reports an invalid expiration from the Mercado Livre token refresh response', async () => {
+    const originalFetch = Object.getOwnPropertyDescriptor(globalThis, '$fetch')
+    const originalRuntimeConfig = Object.getOwnPropertyDescriptor(globalThis, 'useRuntimeConfig')
+
+    Object.defineProperty(globalThis, '$fetch', {
+      configurable: true,
+      value: async () => ({
+        access_token: 'refreshed-access-token',
+        refresh_token: 'refreshed-refresh-token',
+        token_type: 'Bearer',
+        expires_in: undefined,
+      }),
+    })
+    Object.defineProperty(globalThis, 'useRuntimeConfig', {
+      configurable: true,
+      value: () => ({
+        mercadolivre: {
+          clientId: 'client-id',
+          clientSecret: 'client-secret',
+          redirectUri: 'https://example.com/callback',
+        },
+      }),
+    })
+
+    const supabase = {
+      from: () => ({
+        update: () => ({
+          eq: async () => ({ error: null }),
+        }),
+      }),
+    } as unknown as SupabaseClient<Database>
+
+    const connection: Database['public']['Tables']['ml_connections']['Row'] = {
+      id: 'connection-id',
+      seller_id: 1,
+      nickname: 'seller',
+      site_id: 'MLB',
+      access_token: 'expired-access-token',
+      refresh_token: 'refresh-token',
+      token_type: 'Bearer',
+      scope: null,
+      expires_at: '2000-01-01T00:00:00.000Z',
+      reputation_level_id: null,
+      power_seller_status: null,
+      reputation_metrics: {},
+      last_synced_at: null,
+      last_sync_status: 'ok',
+      last_sync_error: null,
+      connected_by: null,
+      created_at: '2000-01-01T00:00:00.000Z',
+      updated_at: '2000-01-01T00:00:00.000Z',
+    }
+
+    try {
+      await expect(ensureValidMlAccessToken(supabase, connection)).rejects.toThrow(
+        'O Mercado Livre retornou um prazo de expiração inválido para o token.',
+      )
+    } finally {
+      if (originalFetch) {
+        Object.defineProperty(globalThis, '$fetch', originalFetch)
+      } else {
+        Reflect.deleteProperty(globalThis, '$fetch')
+      }
+
+      if (originalRuntimeConfig) {
+        Object.defineProperty(globalThis, 'useRuntimeConfig', originalRuntimeConfig)
+      } else {
+        Reflect.deleteProperty(globalThis, 'useRuntimeConfig')
+      }
+    }
   })
 
   test('getMlCurrentPageNumber reads the visible page from the TanStack v9 pagination atom', () => {
