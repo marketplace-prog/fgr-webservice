@@ -1,6 +1,6 @@
 # AGENTS.md — Guia do Desenvolvedor e Fonte Única de Verdade
 
-> **Última revisão:** 20 de outubro de 2026
+> **Última revisão:** 27 de novembro de 2026
 > **Aviso obrigatório:** Se você alterar a stack, a estrutura de diretórios, schemas ou fluxos de integração/cron, atualize este arquivo e os documentos em `docs/` no mesmo commit.
 
 ---
@@ -11,8 +11,9 @@ O **`fgr-webservice`** (FGR Sports) é um monorail fullstack construído em **Nu
 
 1. **Hub de Integração de E-commerce (Magazord ➔ Discord):** Recebe webhooks da plataforma Magazord (novos pedidos e atualizações de situação), processa regras de negócio gerando insights estratégicos (viabilidade de frete, risco de inadimplência, cupom, cross-sell) e despacha alertas ricos via Discord Embeds.
 2. **Painel Administrativo & Gestão de Estoque:** Aplicação interna autenticada via Supabase para monitorar níveis mínimos de estoque de SKUs e alertar a equipe quando houver necessidade de reposição.
-3. **Landing pages públicas:** Captura de leads por páginas `/lp/[slug]`, com cadastro server-side no Supabase e distribuição como Web Component.
-4. **Integração futura Firebird:** base privada de configuração Nitro e contratos TypeScript em `shared/types/firebird.ts`; ainda sem driver, conexão ou modelos de tabelas.
+3. **Relatório gerencial Mercado Livre:** Integração OAuth para pedidos, anúncios, métricas de Product Ads e desempenho de vendas. A sincronização de histórico é paginada em lotes de até 500 pedidos por chamada; o painel continua automaticamente enquanto a conexão estiver com status parcial.
+4. **Landing pages públicas:** Captura de leads por páginas `/lp/[slug]`, com cadastro server-side no Supabase e distribuição como Web Component.
+5. **Integração futura Firebird:** base privada de configuração Nitro e contratos TypeScript em `shared/types/firebird.ts`; ainda sem driver, conexão ou modelos de tabelas.
 
 **Nicho:** esporte e equipamentos esportivos. A identidade visual FGR usa azul `#035096` como cor primária e laranja `#fe3e00` como cor de destaque, registrados como tokens semânticos em `app/assets/css/tailwind.css`.
 

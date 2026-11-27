@@ -85,6 +85,21 @@ export function resolveMlDateRange(
   return { dateFrom: toIsoDate(start), dateTo: toIsoDate(end) }
 }
 
+export function getNextMlOrderOffset(
+  offset: number,
+  syncedCount: number,
+  total: number,
+): number | null {
+  if (syncedCount <= 0) return null
+
+  const nextOffset = offset + syncedCount
+  return nextOffset < total ? nextOffset : null
+}
+
+export function getMlCurrentPageNumber(pagination: { get: () => { pageIndex: number } }): number {
+  return pagination.get().pageIndex + 1
+}
+
 function buildDateBuckets(dateFrom: string, dateTo: string): string[] {
   const dates: string[] = []
   const cursor = new Date(`${dateFrom}T00:00:00.000Z`)

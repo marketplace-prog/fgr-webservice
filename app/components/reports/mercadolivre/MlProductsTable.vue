@@ -26,7 +26,7 @@ import {
 } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 import type { MlTopProductRow } from '~~/shared/types/mercadolivre'
-import { formatLogisticLabel } from '~~/shared/utils/mercadolivre'
+import { formatLogisticLabel, getMlCurrentPageNumber } from '~~/shared/utils/mercadolivre'
 import { fmtBRL } from '~~/shared/utils/revenue'
 
 const props = defineProps<{
@@ -61,7 +61,7 @@ async function copyCode(value: string, label: string) {
   }
 }
 
-const columns = [
+const columns = columnHelper.columns([
   columnHelper.accessor('title', {
     header: 'Produto / Anúncio',
     cell: (info) => info.getValue(),
@@ -95,7 +95,7 @@ const columns = [
     header: 'Envio',
     cell: (info) => formatLogisticLabel(info.getValue()),
   }),
-]
+])
 
 const table = useTable({
   features,
@@ -117,6 +117,8 @@ const table = useTable({
     sorting: [{ id: 'grossRevenue', desc: true }],
   },
 })
+
+const currentPageNumber = computed(() => getMlCurrentPageNumber(table.atoms.pagination))
 
 watch(searchTerm, (val) => {
   table.getColumn('title')?.setFilterValue(val || undefined)
@@ -255,8 +257,7 @@ watch(searchTerm, (val) => {
           <ChevronLeft class="size-4" />
         </Button>
         <span class="px-2 tabular-nums">
-          Página {{ table.getState().pagination.pageIndex + 1 }} de
-          {{ Math.max(1, table.getPageCount()) }}
+          Página {{ currentPageNumber }} de {{ Math.max(1, table.getPageCount()) }}
         </span>
         <Button
           variant="outline"

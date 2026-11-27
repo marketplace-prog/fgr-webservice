@@ -51,6 +51,10 @@ onMounted(() => {
   } else if (typeof route.query.oauth_error === 'string' && route.query.oauth_error) {
     toast.error(`Erro ao conectar Mercado Livre: ${route.query.oauth_error}`)
   }
+
+  if (connection.value?.lastSyncStatus === 'partial') {
+    void handleSync(90)
+  }
 })
 
 const connection = computed(() => data.value?.connection ?? null)
@@ -171,20 +175,41 @@ async function handleConnect() {
   }
 }
 
-async function handleSync() {
+async function handleSync(daysBackOverride?: number) {
   syncing.value = true
   try {
-    const res = await $fetch<{ ordersSynced: number; itemsSynced: number }>(
-      '/api/mercadolivre/sync',
-      {
+    const daysBack = daysBackOverride ?? (range.value === '90d' ? 90 : 60)
+    const dateFrom = new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString()
+    let offset = 0
+    let ordersSynced = 0
+    let itemsSynced = 0
+    let adsSupported = false
+
+    while (true) {
+      const result = await $fetch<{
+        ordersSynced: number
+        nextOrderOffset: number | null
+        itemsSynced: number
+        adsSupported: boolean
+      }>('/api/mercadolivre/sync', {
         method: 'POST',
-        body: { daysBack: range.value === '90d' ? 90 : 60 },
-      },
-    )
+        body: { daysBack, dateFrom, offset },
+      })
+
+      ordersSynced += result.ordersSynced
+      itemsSynced += result.itemsSynced
+      if (offset === 0) adsSupported = result.adsSupported
+      if (result.nextOrderOffset === null) break
+      offset = result.nextOrderOffset
+    }
+
     await refresh()
-    toast.success(
-      `Sincronizado: ${res.ordersSynced} pedidos e ${res.itemsSynced} anúncios atualizados.`,
-    )
+    toast.success(`Sincronizado: ${ordersSynced} pedidos e ${itemsSynced} anúncios atualizados.`)
+    if (!adsSupported) {
+      toast.warning(
+        'Não foi possível obter dados do Mercado Ads. Verifique a autorização e as campanhas Product Ads da conta.',
+      )
+    }
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Falha ao sincronizar com Mercado Livre.'
     toast.error(msg)

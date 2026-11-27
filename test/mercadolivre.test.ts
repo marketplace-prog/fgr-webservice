@@ -1,8 +1,16 @@
 import { describe, expect, test } from 'bun:test'
 import {
+  createPaginatedRowModel,
+  rowPaginationFeature,
+  tableFeatures,
+  useTable,
+} from '@tanstack/vue-table'
+import {
   aggregateMlDashboard,
   classifyLogisticType,
   formatLogisticLabel,
+  getMlCurrentPageNumber,
+  getNextMlOrderOffset,
   getReputationLabel,
   resolveMlDateRange,
 } from '../shared/utils/mercadolivre'
@@ -48,6 +56,27 @@ describe('Mercado Livre utils', () => {
       dateFrom: '2026-11-01',
       dateTo: '2026-11-10',
     })
+  })
+
+  test('getNextMlOrderOffset continues bounded batches until all matching orders are synced', () => {
+    expect(getNextMlOrderOffset(0, 500, 620)).toBe(500)
+    expect(getNextMlOrderOffset(500, 120, 620)).toBeNull()
+    expect(getNextMlOrderOffset(500, 0, 620)).toBeNull()
+  })
+
+  test('getMlCurrentPageNumber reads the visible page from the TanStack v9 pagination atom', () => {
+    const features = tableFeatures({
+      rowPaginationFeature,
+      paginatedRowModel: createPaginatedRowModel(),
+    })
+    const table = useTable({
+      features,
+      columns: [],
+      data: [],
+      initialState: { pagination: { pageIndex: 2, pageSize: 10 } },
+    })
+
+    expect(getMlCurrentPageNumber(table.atoms.pagination)).toBe(3)
   })
 
   test('aggregateMlDashboard computes gross, net, deductions, logistics, products and ads', () => {

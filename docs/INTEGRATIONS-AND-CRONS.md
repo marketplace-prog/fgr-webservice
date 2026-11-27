@@ -19,6 +19,13 @@
 | **Dashboard & Sync Mercado Livre** | `/api/mercadolivre/dashboard` (`GET`) / `/api/mercadolivre/sync` (`POST`) | `GET`/`POST` | Painel Web (Autenticado) | Sessão Supabase | Consulta/atualiza pedidos, anúncios, ADS e canal `mercadolivre` |
 | **Sync Mercado Livre (Cron)**    | `/api/cron/sync-mercadolivre`      | `GET`  | Vercel Cron (`0 11 * * *`, 08:00 BRT) | `serverSupabaseServiceRole`                | Sincroniza últimos 14 dias do ML e atualiza faturamento |
 
+### Sincronização gerencial Mercado Livre
+
+- A carga inicial busca até 90 dias. Cada chamada à rota `/api/mercadolivre/sync` processa no máximo 500 pedidos para manter o trabalho dentro do limite da função serverless e retorna `nextOrderOffset` quando há mais resultados.
+- O painel continua os lotes automaticamente quando a sincronização fica parcial; o botão **Sincronizar agora** também percorre todos os offsets, mantendo fixa a data inicial durante o processo.
+- Os pedidos são paginados em ordem cronológica crescente. Anúncios e Product Ads são atualizados apenas no primeiro lote; falhas na consulta de Product Ads são registradas no log do servidor e exibidas como aviso no painel. A consulta de métricas de Product Ads cobre até 60 dias.
+- A rota de cron continua sincronizando a janela recente de 14 dias em uma chamada por execução.
+
 ## Base de integração Firebird
 
 - **Driver:** `node-firebird` conecta ao banco no servidor Nitro e no script de geração.

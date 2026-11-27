@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database, Json } from '~~/shared/types/database.types'
 import type { MlOrderItemSnapshot, MlReputationMetrics } from '~~/shared/types/mercadolivre'
+import { getNextMlOrderOffset } from '~~/shared/utils/mercadolivre'
 import {
   ensureValidMlAccessToken,
   getActiveMlConnection,
@@ -100,6 +101,7 @@ interface MlAdsMetricsResponse {
 
 export interface MlSyncResult {
   ordersSynced: number
+  nextOrderOffset: number | null
   itemsSynced: number
   adsDaysSynced: number
   adsSupported: boolean
@@ -232,7 +234,7 @@ async function syncRevenueChannelMercadoLivre(
 
 export async function syncMercadoLivreData(
   supabase: SupabaseClient<Database>,
-  options: { daysBack?: number } = {},
+  options: { daysBack?: number; offset?: number; dateFrom?: string } = {},
 ): Promise<MlSyncResult> {
   const connection = await getActiveMlConnection(supabase)
   if (!connection) {
@@ -245,6 +247,7 @@ export async function syncMercadoLivreData(
   const accessToken = await ensureValidMlAccessToken(supabase, connection)
   const sellerId = connection.seller_id
   const daysBack = options.daysBack ?? 90
+  const startOffset = options.offset ?? 0
 
   try {
     // 1. Atualiza perfil e reputação do vendedor
@@ -257,28 +260,37 @@ export async function syncMercadoLivreData(
     }
 
     // 2. Busca pedidos do período (paginação até 500 pedidos por sync para caber com folga no timeout)
-    const dateFrom = new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString()
+    const dateFrom =
+      options.dateFrom ?? new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString()
     const rawOrders: MlRawOrder[] = []
-    let offset = 0
+    let offset = startOffset
+    let totalOrders = 0
     const limit = 50
     const maxOrders = 500
 
-    while (offset < maxOrders) {
+    while (rawOrders.length < maxOrders) {
       const page = await mlApiGet<MlOrdersSearchResponse>('/orders/search', accessToken, {
         seller: sellerId,
         'order.date_created.from': dateFrom,
-        sort: 'date_desc',
+        sort: 'date_asc',
         limit,
         offset,
       })
 
+      totalOrders = page.paging.total
       const batch = page.results || []
       rawOrders.push(...batch)
-      if (batch.length < limit || rawOrders.length >= page.paging.total) {
+      if (
+        batch.length < limit ||
+        rawOrders.length >= totalOrders - startOffset ||
+        rawOrders.length >= maxOrders
+      ) {
         break
       }
-      offset += limit
+      offset += batch.length
     }
+
+    const nextOrderOffset = getNextMlOrderOffset(startOffset, rawOrders.length, totalOrders)
 
     // Busca detalhes de envio para pedidos únicos com shipping.id
     const shippingIds = Array.from(
@@ -349,114 +361,122 @@ export async function syncMercadoLivreData(
       }
     }
 
-    // 3. Sincroniza anúncios (ativos e pausados, até 200 mais recentes)
-    const itemIdsSet = new Set<string>()
-    for (const status of ['active', 'paused']) {
-      const searchRes = await mlApiGet<MlItemsSearchResponse>(
-        `/users/${sellerId}/items/search`,
-        accessToken,
-        { status, limit: 100 },
-      ).catch(() => ({ results: [] }))
-
-      for (const id of searchRes.results || []) {
-        itemIdsSet.add(id)
-      }
-    }
-
-    const itemIds = Array.from(itemIdsSet).slice(0, 200)
-    const itemUpserts: Database['public']['Tables']['ml_items']['Insert'][] = []
-
-    for (let i = 0; i < itemIds.length; i += 20) {
-      const chunk = itemIds.slice(i, i + 20)
-      const multi = await mlApiGet<MlMultiGetItemEntry[]>('/items', accessToken, {
-        ids: chunk.join(','),
-      }).catch(() => [])
-
-      for (const entry of multi) {
-        if (entry.code !== 200 || !entry.body) continue
-        const b = entry.body
-        itemUpserts.push({
-          item_id: b.id,
-          seller_id: sellerId,
-          sku: extractItemSku(b),
-          title: b.title,
-          status: b.status,
-          price: Number(b.price ?? 0),
-          available_quantity: Number(b.available_quantity ?? 0),
-          sold_quantity: Number(b.sold_quantity ?? 0),
-          listing_type_id: b.listing_type_id ?? null,
-          logistic_type: b.shipping?.logistic_type ?? null,
-          permalink: b.permalink ?? null,
-          thumbnail: b.thumbnail ?? null,
-          health: b.health ?? null,
-          updated_at: new Date().toISOString(),
-        })
-      }
-    }
-
-    if (itemUpserts.length) {
-      const { error: itemsErr } = await supabase
-        .from('ml_items')
-        .upsert(itemUpserts, { onConflict: 'item_id' })
-
-      if (itemsErr) {
-        throw new Error(`Erro ao salvar anúncios ML: ${itemsErr.message}`)
-      }
-    }
-
-    // 4. Tenta sincronizar métricas de Product Ads (opcional conforme escopo do app)
+    let itemUpserts: Database['public']['Tables']['ml_items']['Insert'][] = []
     let adsDaysSynced = 0
     let adsSupported = false
-    try {
-      const advertisers = await mlApiGet<MlAdvertisersResponse>(
-        '/advertising/advertisers',
-        accessToken,
-        { product_id: 'PADS' },
-      )
-      const advertiser = advertisers.advertisers?.[0]
-      if (advertiser) {
-        adsSupported = true
-        const toDate = new Date().toISOString().slice(0, 10)
-        const fromDate = new Date(Date.now() - Math.min(daysBack, 60) * 24 * 60 * 60 * 1000)
-          .toISOString()
-          .slice(0, 10)
 
-        const adsRes = await mlApiGet<MlAdsMetricsResponse>(
-          `/advertising/${advertiser.site_id}/advertisers/${advertiser.advertiser_id}/product_ads/campaigns/metrics`,
+    if (startOffset === 0) {
+      // 3. Sincroniza anúncios (ativos e pausados, até 200 mais recentes)
+      const itemIdsSet = new Set<string>()
+      for (const status of ['active', 'paused']) {
+        const searchRes = await mlApiGet<MlItemsSearchResponse>(
+          `/users/${sellerId}/items/search`,
           accessToken,
-          {
-            date_from: fromDate,
-            date_to: toDate,
-            metrics: 'clicks,prints,cost,direct_amount,indirect_amount,total_amount,acos,roas',
-            aggregation_type: 'DAILY',
-          },
+          { status, limit: 100 },
         ).catch(() => ({ results: [] }))
 
-        const adsUpserts: Database['public']['Tables']['ml_ads_daily']['Insert'][] = (
-          adsRes.results || []
-        )
-          .filter((r) => Boolean(r.date))
-          .map((r) => ({
-            seller_id: sellerId,
-            date: r.date!,
-            cost: Number(r.metrics?.cost ?? 0),
-            clicks: Number(r.metrics?.clicks ?? 0),
-            prints: Number(r.metrics?.prints ?? 0),
-            direct_amount: Number(r.metrics?.direct_amount ?? 0),
-            indirect_amount: Number(r.metrics?.indirect_amount ?? 0),
-            total_amount: Number(r.metrics?.total_amount ?? 0),
-            acos: r.metrics?.acos ?? null,
-            roas: r.metrics?.roas ?? null,
-            updated_at: new Date().toISOString(),
-          }))
-
-        if (adsUpserts.length) {
-          await supabase.from('ml_ads_daily').upsert(adsUpserts, { onConflict: 'seller_id,date' })
-          adsDaysSynced = adsUpserts.length
+        for (const id of searchRes.results || []) {
+          itemIdsSet.add(id)
         }
       }
-    } catch {
-      adsSupported = false
+
+      const itemIds = Array.from(itemIdsSet).slice(0, 200)
+      itemUpserts = []
+
+      for (let i = 0; i < itemIds.length; i += 20) {
+        const chunk = itemIds.slice(i, i + 20)
+        const multi = await mlApiGet<MlMultiGetItemEntry[]>('/items', accessToken, {
+          ids: chunk.join(','),
+        }).catch(() => [])
+
+        for (const entry of multi) {
+          if (entry.code !== 200 || !entry.body) continue
+          const b = entry.body
+          itemUpserts.push({
+            item_id: b.id,
+            seller_id: sellerId,
+            sku: extractItemSku(b),
+            title: b.title,
+            status: b.status,
+            price: Number(b.price ?? 0),
+            available_quantity: Number(b.available_quantity ?? 0),
+            sold_quantity: Number(b.sold_quantity ?? 0),
+            listing_type_id: b.listing_type_id ?? null,
+            logistic_type: b.shipping?.logistic_type ?? null,
+            permalink: b.permalink ?? null,
+            thumbnail: b.thumbnail ?? null,
+            health: b.health ?? null,
+            updated_at: new Date().toISOString(),
+          })
+        }
+      }
+
+      if (itemUpserts.length) {
+        const { error: itemsErr } = await supabase
+          .from('ml_items')
+          .upsert(itemUpserts, { onConflict: 'item_id' })
+
+        if (itemsErr) {
+          throw new Error(`Erro ao salvar anúncios ML: ${itemsErr.message}`)
+        }
+      }
+
+      // 4. Tenta sincronizar métricas de Product Ads (opcional conforme escopo do app)
+      try {
+        const advertisers = await mlApiGet<MlAdvertisersResponse>(
+          '/advertising/advertisers',
+          accessToken,
+          { product_id: 'PADS' },
+        )
+        const advertiser = advertisers.advertisers?.[0]
+        if (advertiser) {
+          adsSupported = true
+          const toDate = new Date().toISOString().slice(0, 10)
+          const fromDate = new Date(Date.now() - Math.min(daysBack, 60) * 24 * 60 * 60 * 1000)
+            .toISOString()
+            .slice(0, 10)
+
+          const adsRes = await mlApiGet<MlAdsMetricsResponse>(
+            `/advertising/${advertiser.site_id}/advertisers/${advertiser.advertiser_id}/product_ads/campaigns/metrics`,
+            accessToken,
+            {
+              date_from: fromDate,
+              date_to: toDate,
+              metrics: 'clicks,prints,cost,direct_amount,indirect_amount,total_amount,acos,roas',
+              aggregation_type: 'DAILY',
+            },
+          )
+
+          const adsUpserts: Database['public']['Tables']['ml_ads_daily']['Insert'][] = (
+            adsRes.results || []
+          )
+            .filter((r) => Boolean(r.date))
+            .map((r) => ({
+              seller_id: sellerId,
+              date: r.date!,
+              cost: Number(r.metrics?.cost ?? 0),
+              clicks: Number(r.metrics?.clicks ?? 0),
+              prints: Number(r.metrics?.prints ?? 0),
+              direct_amount: Number(r.metrics?.direct_amount ?? 0),
+              indirect_amount: Number(r.metrics?.indirect_amount ?? 0),
+              total_amount: Number(r.metrics?.total_amount ?? 0),
+              acos: r.metrics?.acos ?? null,
+              roas: r.metrics?.roas ?? null,
+              updated_at: new Date().toISOString(),
+            }))
+
+          if (adsUpserts.length) {
+            await supabase.from('ml_ads_daily').upsert(adsUpserts, { onConflict: 'seller_id,date' })
+            adsDaysSynced = adsUpserts.length
+          }
+        }
+      } catch (adsErr) {
+        console.warn(
+          '[ML Sync] Falha ao sincronizar Product Ads:',
+          adsErr instanceof Error ? adsErr.message : 'Erro desconhecido',
+        )
+        adsSupported = false
+      }
     }
 
     // 5. Alimenta revenue_monthly e revenue_daily com channel = 'mercadolivre'
@@ -472,7 +492,7 @@ export async function syncMercadoLivreData(
         power_seller_status: profile.seller_reputation?.power_seller_status ?? null,
         reputation_metrics: reputationMetrics as unknown as Json,
         last_synced_at: nowIso,
-        last_sync_status: 'ok',
+        last_sync_status: nextOrderOffset === null ? 'ok' : 'partial',
         last_sync_error: null,
         updated_at: nowIso,
       })
@@ -480,6 +500,7 @@ export async function syncMercadoLivreData(
 
     return {
       ordersSynced: orderUpserts.length,
+      nextOrderOffset,
       itemsSynced: itemUpserts.length,
       adsDaysSynced,
       adsSupported,

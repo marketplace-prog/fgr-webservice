@@ -134,12 +134,14 @@ export async function mlApiGet<T>(
     }
   }
 
-  return await $fetch<T>(url.toString(), {
+  const response = await $fetch<unknown>(url.toString(), {
     headers: {
       Authorization: `Bearer ${accessToken}`,
       accept: 'application/json',
     },
   })
+
+  return response as T
 }
 
 export async function getActiveMlConnection(supabase: SupabaseClient<Database>) {
