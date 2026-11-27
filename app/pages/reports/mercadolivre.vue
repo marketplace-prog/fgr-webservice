@@ -2,6 +2,7 @@
 import {
   AlertTriangle,
   Copy,
+  Info,
   Link2,
   RefreshCw,
   ShieldCheck,
@@ -13,6 +14,7 @@ import { toast } from 'vue-sonner'
 import type { MlDashboardRange, MlDashboardResponse } from '~~/shared/types/mercadolivre'
 import { formatLogisticLabel, getReputationLabel } from '~~/shared/utils/mercadolivre'
 import { fmtBRL, fmtCompactBRL } from '~~/shared/utils/revenue'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { MlEChartsOption } from '@/components/reports/mercadolivre/MlChart.vue'
 import MlChart from '@/components/reports/mercadolivre/MlChart.vue'
 import MlProductsTable from '@/components/reports/mercadolivre/MlProductsTable.vue'
@@ -386,7 +388,25 @@ function fmtPct(val: number | null | undefined, digits = 1): string {
       <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader class="pb-2">
-            <CardDescription>Receita Bruta (Pedidos Pagos)</CardDescription>
+            <div class="flex items-center gap-1">
+              <CardDescription>Receita Bruta (Pedidos Pagos)</CardDescription>
+              <Tooltip>
+                <TooltipTrigger as-child>
+                  <button
+                    type="button"
+                    class="inline-flex size-5 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                    aria-label="Sobre receita bruta"
+                  >
+                    <Info class="size-3.5" aria-hidden="true" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent class="max-w-72 text-left">
+                  Soma os valores dos pedidos com status “pago” no período selecionado. Pedidos
+                  cancelados ficam fora. O painel do Mercado Livre pode usar filtros ou datas de
+                  referência diferentes.
+                </TooltipContent>
+              </Tooltip>
+            </div>
             <CardTitle class="text-2xl tabular-nums">
               {{ fmtBRL(dashboard.kpis.grossRevenue) }}
             </CardTitle>
@@ -399,7 +419,24 @@ function fmtPct(val: number | null | undefined, digits = 1): string {
 
         <Card>
           <CardHeader class="pb-2">
-            <CardDescription>Receita Líquida Estimada</CardDescription>
+            <div class="flex items-center gap-1">
+              <CardDescription>Receita Líquida Estimada</CardDescription>
+              <Tooltip>
+                <TooltipTrigger as-child>
+                  <button
+                    type="button"
+                    class="inline-flex size-5 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                    aria-label="Sobre receita líquida estimada"
+                  >
+                    <Info class="size-3.5" aria-hidden="true" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent class="max-w-72 text-left">
+                  Estimativa dos pedidos pagos após comissão, frete atribuído ao vendedor e gasto em
+                  Product Ads. Não representa o saldo nem o repasse oficial do Mercado Livre.
+                </TooltipContent>
+              </Tooltip>
+            </div>
             <CardTitle class="text-2xl text-emerald-600 tabular-nums dark:text-emerald-400">
               {{ fmtBRL(dashboard.kpis.netRevenue) }}
             </CardTitle>
@@ -417,7 +454,24 @@ function fmtPct(val: number | null | undefined, digits = 1): string {
 
         <Card>
           <CardHeader class="pb-2">
-            <CardDescription>Deduções (Comissão + Frete)</CardDescription>
+            <div class="flex items-center gap-1">
+              <CardDescription>Deduções (Comissão + Frete)</CardDescription>
+              <Tooltip>
+                <TooltipTrigger as-child>
+                  <button
+                    type="button"
+                    class="inline-flex size-5 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                    aria-label="Sobre deduções"
+                  >
+                    <Info class="size-3.5" aria-hidden="true" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent class="max-w-72 text-left">
+                  Soma somente as comissões e os custos de frete atribuídos aos pedidos pagos na
+                  sincronização. Outros ajustes, estornos ou tarifas podem não estar incluídos.
+                </TooltipContent>
+              </Tooltip>
+            </div>
             <CardTitle class="text-2xl tabular-nums">
               {{ fmtBRL(dashboard.kpis.totalFees + dashboard.kpis.totalShippingCost) }}
             </CardTitle>
@@ -430,7 +484,24 @@ function fmtPct(val: number | null | undefined, digits = 1): string {
 
         <Card>
           <CardHeader class="pb-2">
-            <CardDescription>Ticket Médio</CardDescription>
+            <div class="flex items-center gap-1">
+              <CardDescription>Ticket Médio</CardDescription>
+              <Tooltip>
+                <TooltipTrigger as-child>
+                  <button
+                    type="button"
+                    class="inline-flex size-5 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                    aria-label="Sobre ticket médio"
+                  >
+                    <Info class="size-3.5" aria-hidden="true" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent class="max-w-72 text-left">
+                  Receita bruta dos pedidos pagos dividida pela quantidade desses pedidos no
+                  período. É uma média por pedido, não por produto.
+                </TooltipContent>
+              </Tooltip>
+            </div>
             <CardTitle class="text-2xl tabular-nums">
               {{ fmtBRL(dashboard.kpis.averageTicket) }}
             </CardTitle>
@@ -442,7 +513,26 @@ function fmtPct(val: number | null | undefined, digits = 1): string {
 
         <Card>
           <CardHeader class="pb-2">
-            <CardDescription>Mercado Ads (Product Ads)</CardDescription>
+            <div class="flex items-center gap-1">
+              <CardDescription>Mercado Ads (Product Ads)</CardDescription>
+              <Tooltip>
+                <TooltipTrigger as-child>
+                  <button
+                    type="button"
+                    class="inline-flex size-5 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                    aria-label="Sobre métricas do Mercado Ads"
+                  >
+                    <Info class="size-3.5" aria-hidden="true" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent class="max-w-72 text-left">
+                  Mostra o gasto e a receita atribuída a Product Ads. ACOS é gasto dividido pela
+                  receita atribuída; ROAS é receita atribuída dividida pelo gasto. A sincronização
+                  consulta no máximo 60 dias, então a cobertura pode ser menor que o período do
+                  relatório.
+                </TooltipContent>
+              </Tooltip>
+            </div>
             <CardTitle class="text-2xl tabular-nums">
               {{ dashboard.kpis.hasAdsData ? fmtBRL(dashboard.kpis.adsCost) : 'Sem dados' }}
             </CardTitle>
@@ -460,7 +550,24 @@ function fmtPct(val: number | null | undefined, digits = 1): string {
 
         <Card>
           <CardHeader class="pb-2">
-            <CardDescription>Saúde da Conta (60 dias)</CardDescription>
+            <div class="flex items-center gap-1">
+              <CardDescription>Saúde da Conta</CardDescription>
+              <Tooltip>
+                <TooltipTrigger as-child>
+                  <button
+                    type="button"
+                    class="inline-flex size-5 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                    aria-label="Sobre saúde da conta"
+                  >
+                    <Info class="size-3.5" aria-hidden="true" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent class="max-w-72 text-left">
+                  Vendas e taxas de reclamações e atrasos vêm do perfil de reputação do vendedor no
+                  Mercado Livre. O total de vendas não usa o filtro de datas deste relatório.
+                </TooltipContent>
+              </Tooltip>
+            </div>
             <CardTitle class="flex items-center gap-2 text-lg">
               <TrendingUp class="size-5 text-primary" />
               {{ connection.reputationMetrics.sales60d ?? 0 }} vendas
