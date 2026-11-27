@@ -105,9 +105,12 @@ describe('Mercado Livre utils', () => {
     expect(getNextMlOrderOffset(50, ML_ORDER_SYNC_BATCH_SIZE, 120)).toBe(100)
   })
 
-  test('distinguishes sync request errors from dashboard refresh errors', () => {
+  test('distinguishes preparation, sync request, and dashboard refresh errors', () => {
     expect(formatMlSyncStageError('sync', 'Invalid time value')).toBe(
       'Falha na requisição de sincronização do Mercado Livre: Invalid time value',
+    )
+    expect(formatMlSyncStageError('prepare', 'Invalid time value')).toBe(
+      'Falha ao preparar a sincronização do Mercado Livre: Invalid time value',
     )
     expect(formatMlSyncStageError('refresh', 'Invalid time value')).toBe(
       'Sincronização concluída, mas falhou ao atualizar o dashboard: Invalid time value',

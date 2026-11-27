@@ -40,9 +40,16 @@ export function normalizeMlSyncDateFrom(value: unknown): string | undefined | nu
   return date.toISOString()
 }
 
-export function formatMlSyncStageError(stage: 'sync' | 'refresh', message: string): string {
+export function formatMlSyncStageError(
+  stage: 'prepare' | 'sync' | 'refresh',
+  message: string,
+): string {
   if (stage === 'refresh') {
     return `Sincronização concluída, mas falhou ao atualizar o dashboard: ${message}`
+  }
+
+  if (stage === 'prepare') {
+    return `Falha ao preparar a sincronização do Mercado Livre: ${message}`
   }
 
   return `Falha na requisição de sincronização do Mercado Livre: ${message}`

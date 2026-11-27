@@ -185,7 +185,7 @@ async function handleConnect() {
 
 async function handleSync(daysBackOverride?: number) {
   syncing.value = true
-  let stage: 'sync' | 'refresh' = 'sync'
+  let stage: 'prepare' | 'sync' | 'refresh' = 'prepare'
   try {
     const daysBack = daysBackOverride ?? (range.value === '90d' ? 90 : 60)
     const dateFrom = new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString()
@@ -195,6 +195,7 @@ async function handleSync(daysBackOverride?: number) {
     let adsSupported = false
 
     while (true) {
+      stage = 'sync'
       const result = await $fetch<{
         ordersSynced: number
         nextOrderOffset: number | null
@@ -222,6 +223,11 @@ async function handleSync(daysBackOverride?: number) {
     }
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Falha ao sincronizar com Mercado Livre.'
+    const stack = err instanceof Error ? err.stack?.split('\n').slice(1).join('\n') : null
+    console.error('[ML Sync] Falha no cliente:', {
+      stage,
+      stack: stack ?? 'Exceção sem stack.',
+    })
     toast.error(formatMlSyncStageError(stage, msg))
   } finally {
     syncing.value = false
