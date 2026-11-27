@@ -12,10 +12,13 @@ import {
   ML_ORDER_SYNC_BATCH_SIZE,
   aggregateMlDashboard,
   classifyLogisticType,
+  formatMlLastSyncedAt,
+  formatMlSyncStageError,
   formatLogisticLabel,
   getMlCurrentPageNumber,
   getNextMlOrderOffset,
   getReputationLabel,
+  normalizeMlSyncDateFrom,
   normalizeMlSyncDaysBack,
   resolveMlDateRange,
 } from '../shared/utils/mercadolivre'
@@ -63,6 +66,19 @@ describe('Mercado Livre utils', () => {
     })
   })
 
+  test('falls back to the default range when a custom date is missing or invalid', () => {
+    const ref = new Date('2026-11-27T12:00:00.000Z')
+
+    expect(resolveMlDateRange('custom', 'not-a-date', '2026-11-27', ref)).toEqual({
+      dateFrom: '2026-10-29',
+      dateTo: '2026-11-27',
+    })
+    expect(resolveMlDateRange('custom', '2026-11-01', undefined, ref)).toEqual({
+      dateFrom: '2026-10-29',
+      dateTo: '2026-11-27',
+    })
+  })
+
   test('getNextMlOrderOffset continues bounded batches until all matching orders are synced', () => {
     expect(getNextMlOrderOffset(0, 500, 620)).toBe(500)
     expect(getNextMlOrderOffset(500, 120, 620)).toBeNull()
@@ -76,10 +92,32 @@ describe('Mercado Livre utils', () => {
     expect(normalizeMlSyncDaysBack('not-a-number')).toBeNull()
   })
 
+  test('normalizes optional sync dates and rejects invalid or non-string date values', () => {
+    expect(normalizeMlSyncDateFrom(undefined)).toBeUndefined()
+    expect(normalizeMlSyncDateFrom(null)).toBeNull()
+    expect(normalizeMlSyncDateFrom('not-a-date')).toBeNull()
+    expect(normalizeMlSyncDateFrom('2026-11-27T00:00:00-03:00')).toBe('2026-11-27T03:00:00.000Z')
+  })
+
   test('interactive order batches stay within one page and continue with the next offset', () => {
     expect(ML_ORDER_SYNC_BATCH_SIZE).toBe(50)
     expect(getNextMlOrderOffset(0, ML_ORDER_SYNC_BATCH_SIZE, 120)).toBe(50)
     expect(getNextMlOrderOffset(50, ML_ORDER_SYNC_BATCH_SIZE, 120)).toBe(100)
+  })
+
+  test('distinguishes sync request errors from dashboard refresh errors', () => {
+    expect(formatMlSyncStageError('sync', 'Invalid time value')).toBe(
+      'Falha na requisição de sincronização do Mercado Livre: Invalid time value',
+    )
+    expect(formatMlSyncStageError('refresh', 'Invalid time value')).toBe(
+      'Sincronização concluída, mas falhou ao atualizar o dashboard: Invalid time value',
+    )
+  })
+
+  test('does not format missing or invalid last-sync timestamps', () => {
+    expect(formatMlLastSyncedAt(null)).toBeNull()
+    expect(formatMlLastSyncedAt('not-a-date')).toBeNull()
+    expect(formatMlLastSyncedAt('2026-11-27T17:11:49.000Z')).not.toBeNull()
   })
 
   test('reports an invalid expiration from the Mercado Livre token refresh response', async () => {

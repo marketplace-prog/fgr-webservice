@@ -12,7 +12,12 @@ import {
 } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 import type { MlDashboardRange, MlDashboardResponse } from '~~/shared/types/mercadolivre'
-import { formatLogisticLabel, getReputationLabel } from '~~/shared/utils/mercadolivre'
+import {
+  formatLogisticLabel,
+  formatMlLastSyncedAt,
+  formatMlSyncStageError,
+  getReputationLabel,
+} from '~~/shared/utils/mercadolivre'
 import { fmtBRL, fmtCompactBRL } from '~~/shared/utils/revenue'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { MlEChartsOption } from '@/components/reports/mercadolivre/MlChart.vue'
@@ -61,6 +66,7 @@ onMounted(() => {
 
 const connection = computed(() => data.value?.connection ?? null)
 const dashboard = computed(() => data.value?.dashboard ?? null)
+const lastSyncedAtLabel = computed(() => formatMlLastSyncedAt(connection.value?.lastSyncedAt))
 
 const reputationInfo = computed(() =>
   getReputationLabel(connection.value?.reputationLevelId, connection.value?.powerSellerStatus),
@@ -179,6 +185,7 @@ async function handleConnect() {
 
 async function handleSync(daysBackOverride?: number) {
   syncing.value = true
+  let stage: 'sync' | 'refresh' = 'sync'
   try {
     const daysBack = daysBackOverride ?? (range.value === '90d' ? 90 : 60)
     const dateFrom = new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString()
@@ -205,6 +212,7 @@ async function handleSync(daysBackOverride?: number) {
       offset = result.nextOrderOffset
     }
 
+    stage = 'refresh'
     await refresh()
     toast.success(`Sincronizado: ${ordersSynced} pedidos e ${itemsSynced} anúncios atualizados.`)
     if (!adsSupported) {
@@ -214,7 +222,7 @@ async function handleSync(daysBackOverride?: number) {
     }
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Falha ao sincronizar com Mercado Livre.'
-    toast.error(msg)
+    toast.error(formatMlSyncStageError(stage, msg))
   } finally {
     syncing.value = false
   }
@@ -267,9 +275,9 @@ function fmtPct(val: number | null | undefined, digits = 1): string {
           </Badge>
         </div>
         <p class="text-sm text-muted-foreground">
-          <template v-if="connection?.connected && connection.lastSyncedAt">
+          <template v-if="connection?.connected && lastSyncedAtLabel">
             Última sincronização:
-            {{ new Date(connection.lastSyncedAt).toLocaleString('pt-BR') }}
+            {{ lastSyncedAtLabel }}
           </template>
           <template v-else-if="connection?.connected">
             Conta conectada. Clique em sincronizar para carregar pedidos e anúncios.

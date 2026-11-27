@@ -1,6 +1,10 @@
 import { serverSupabaseServiceRole, serverSupabaseUser } from '#supabase/server'
 import type { Database } from '~~/shared/types/database.types'
-import { ML_ORDER_SYNC_BATCH_SIZE, normalizeMlSyncDaysBack } from '~~/shared/utils/mercadolivre'
+import {
+  ML_ORDER_SYNC_BATCH_SIZE,
+  normalizeMlSyncDateFrom,
+  normalizeMlSyncDaysBack,
+} from '~~/shared/utils/mercadolivre'
 import { syncMercadoLivreData } from '~~/server/utils/mercadolivre-sync'
 
 export default defineEventHandler(async (event) => {
@@ -30,16 +34,12 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  let dateFrom: string | undefined
-  if (body?.dateFrom !== undefined) {
-    if (typeof body.dateFrom !== 'string' || Number.isNaN(Date.parse(body.dateFrom))) {
-      throw createError({
-        statusCode: 400,
-        message: 'A data inicial da sincronização é inválida.',
-      })
-    }
-
-    dateFrom = new Date(body.dateFrom).toISOString()
+  const dateFrom = normalizeMlSyncDateFrom(body?.dateFrom)
+  if (dateFrom === null) {
+    throw createError({
+      statusCode: 400,
+      message: 'A data inicial da sincronização é inválida.',
+    })
   }
 
   const supabase = serverSupabaseServiceRole<Database>(event)

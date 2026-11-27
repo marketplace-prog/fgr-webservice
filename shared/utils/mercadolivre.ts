@@ -27,6 +27,36 @@ export function normalizeMlSyncDaysBack(value: unknown): number | null {
   return Math.min(Math.max(daysBack, 1), 180)
 }
 
+export function normalizeMlSyncDateFrom(value: unknown): string | undefined | null {
+  if (value === undefined) return undefined
+  if (typeof value !== 'string') return null
+
+  const timestamp = Date.parse(value)
+  if (!Number.isFinite(timestamp)) return null
+
+  const date = new Date(timestamp)
+  if (Number.isNaN(date.getTime())) return null
+
+  return date.toISOString()
+}
+
+export function formatMlSyncStageError(stage: 'sync' | 'refresh', message: string): string {
+  if (stage === 'refresh') {
+    return `Sincronização concluída, mas falhou ao atualizar o dashboard: ${message}`
+  }
+
+  return `Falha na requisição de sincronização do Mercado Livre: ${message}`
+}
+
+export function formatMlLastSyncedAt(value: string | null | undefined): string | null {
+  if (!value) return null
+
+  const date = new Date(value)
+  if (!Number.isFinite(date.getTime())) return null
+
+  return date.toLocaleString('pt-BR')
+}
+
 export function classifyLogisticType(logisticType: string | null | undefined): MlLogisticCategory {
   if (!logisticType) return 'other'
   const normalized = logisticType.toLowerCase()
@@ -40,6 +70,13 @@ export function classifyLogisticType(logisticType: string | null | undefined): M
 
 export function formatLogisticLabel(logisticType: string | null | undefined): string {
   return LOGISTIC_LABELS[classifyLogisticType(logisticType)]
+}
+
+function isValidIsoDate(value: string | undefined): value is string {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+
+  const date = new Date(`${value}T00:00:00.000Z`)
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value
 }
 
 export function getReputationLabel(
@@ -76,7 +113,7 @@ export function resolveMlDateRange(
 ): { dateFrom: string; dateTo: string } {
   const toIsoDate = (d: Date) => d.toISOString().slice(0, 10)
 
-  if (range === 'custom' && customFrom && customTo) {
+  if (range === 'custom' && isValidIsoDate(customFrom) && isValidIsoDate(customTo)) {
     return customFrom <= customTo
       ? { dateFrom: customFrom, dateTo: customTo }
       : { dateFrom: customTo, dateTo: customFrom }
