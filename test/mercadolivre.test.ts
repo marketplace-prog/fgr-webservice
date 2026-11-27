@@ -9,12 +9,14 @@ import {
 import { ensureValidMlAccessToken } from '../server/utils/mercadolivre-api'
 import type { Database } from '../shared/types/database.types'
 import {
+  ML_ORDER_SYNC_BATCH_SIZE,
   aggregateMlDashboard,
   classifyLogisticType,
   formatLogisticLabel,
   getMlCurrentPageNumber,
   getNextMlOrderOffset,
   getReputationLabel,
+  normalizeMlSyncDaysBack,
   resolveMlDateRange,
 } from '../shared/utils/mercadolivre'
 import type { MlAdsDailyRecord, MlItemRecord, MlOrderRecord } from '../shared/types/mercadolivre'
@@ -65,6 +67,19 @@ describe('Mercado Livre utils', () => {
     expect(getNextMlOrderOffset(0, 500, 620)).toBe(500)
     expect(getNextMlOrderOffset(500, 120, 620)).toBeNull()
     expect(getNextMlOrderOffset(500, 0, 620)).toBeNull()
+  })
+
+  test('normalizes sync day ranges and rejects values that would create an invalid date', () => {
+    expect(normalizeMlSyncDaysBack(undefined)).toBe(90)
+    expect(normalizeMlSyncDaysBack(0)).toBe(1)
+    expect(normalizeMlSyncDaysBack(181)).toBe(180)
+    expect(normalizeMlSyncDaysBack('not-a-number')).toBeNull()
+  })
+
+  test('interactive order batches stay within one page and continue with the next offset', () => {
+    expect(ML_ORDER_SYNC_BATCH_SIZE).toBe(50)
+    expect(getNextMlOrderOffset(0, ML_ORDER_SYNC_BATCH_SIZE, 120)).toBe(50)
+    expect(getNextMlOrderOffset(50, ML_ORDER_SYNC_BATCH_SIZE, 120)).toBe(100)
   })
 
   test('reports an invalid expiration from the Mercado Livre token refresh response', async () => {

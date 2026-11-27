@@ -1,5 +1,6 @@
 import { serverSupabaseServiceRole, serverSupabaseUser } from '#supabase/server'
 import type { Database } from '~~/shared/types/database.types'
+import { ML_ORDER_SYNC_BATCH_SIZE, normalizeMlSyncDaysBack } from '~~/shared/utils/mercadolivre'
 import { syncMercadoLivreData } from '~~/server/utils/mercadolivre-sync'
 
 export default defineEventHandler(async (event) => {
@@ -11,8 +12,15 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const body = await readBody<{ daysBack?: number; offset?: number; dateFrom?: string }>(event)
-  const daysBack = Math.min(Math.max(Number(body?.daysBack || 90), 1), 180)
+  const body = await readBody<{ daysBack?: unknown; offset?: number; dateFrom?: string }>(event)
+  const daysBack = normalizeMlSyncDaysBack(body?.daysBack)
+  if (daysBack === null) {
+    throw createError({
+      statusCode: 400,
+      message: 'A quantidade de dias da sincronização precisa ser um número válido.',
+    })
+  }
+
   const offset = body?.offset ?? 0
 
   if (!Number.isSafeInteger(offset) || offset < 0) {
@@ -35,7 +43,12 @@ export default defineEventHandler(async (event) => {
   }
 
   const supabase = serverSupabaseServiceRole<Database>(event)
-  const result = await syncMercadoLivreData(supabase, { daysBack, offset, dateFrom })
+  const result = await syncMercadoLivreData(supabase, {
+    daysBack,
+    offset,
+    dateFrom,
+    maxOrders: ML_ORDER_SYNC_BATCH_SIZE,
+  })
 
   return {
     success: true,

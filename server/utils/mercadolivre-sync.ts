@@ -234,7 +234,7 @@ async function syncRevenueChannelMercadoLivre(
 
 export async function syncMercadoLivreData(
   supabase: SupabaseClient<Database>,
-  options: { daysBack?: number; offset?: number; dateFrom?: string } = {},
+  options: { daysBack?: number; offset?: number; dateFrom?: string; maxOrders?: number } = {},
 ): Promise<MlSyncResult> {
   const connection = await getActiveMlConnection(supabase)
   if (!connection) {
@@ -259,14 +259,14 @@ export async function syncMercadoLivreData(
       sales60d: profile.seller_reputation?.transactions?.total ?? null,
     }
 
-    // 2. Busca pedidos do período (paginação até 500 pedidos por sync para caber com folga no timeout)
+    // 2. Busca pedidos do período em lotes menores nas chamadas iniciadas pelo painel.
     const dateFrom =
       options.dateFrom ?? new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString()
     const rawOrders: MlRawOrder[] = []
     let offset = startOffset
     let totalOrders = 0
     const limit = 50
-    const maxOrders = 500
+    const maxOrders = options.maxOrders ?? 500
 
     while (rawOrders.length < maxOrders) {
       const page = await mlApiGet<MlOrdersSearchResponse>('/orders/search', accessToken, {

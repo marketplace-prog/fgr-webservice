@@ -17,6 +17,16 @@ const LOGISTIC_LABELS: Record<MlLogisticCategory, string> = {
   other: 'Outros',
 }
 
+export const ML_ORDER_SYNC_BATCH_SIZE = 50
+
+export function normalizeMlSyncDaysBack(value: unknown): number | null {
+  const daysBack = value === undefined || value === null ? 90 : Number(value)
+
+  if (!Number.isFinite(daysBack)) return null
+
+  return Math.min(Math.max(daysBack, 1), 180)
+}
+
 export function classifyLogisticType(logisticType: string | null | undefined): MlLogisticCategory {
   if (!logisticType) return 'other'
   const normalized = logisticType.toLowerCase()
