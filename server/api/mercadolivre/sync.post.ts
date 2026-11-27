@@ -5,6 +5,7 @@ import {
   normalizeMlSyncDateFrom,
   normalizeMlSyncDaysBack,
 } from '~~/shared/utils/mercadolivre'
+import type { MlSyncResult } from '~~/server/utils/mercadolivre-sync'
 import { syncMercadoLivreData } from '~~/server/utils/mercadolivre-sync'
 
 export default defineEventHandler(async (event) => {
@@ -43,12 +44,18 @@ export default defineEventHandler(async (event) => {
   }
 
   const supabase = serverSupabaseServiceRole<Database>(event)
-  const result = await syncMercadoLivreData(supabase, {
-    daysBack,
-    offset,
-    dateFrom,
-    maxOrders: ML_ORDER_SYNC_BATCH_SIZE,
-  })
+  let result: MlSyncResult
+  try {
+    result = await syncMercadoLivreData(supabase, {
+      daysBack,
+      offset,
+      dateFrom,
+      maxOrders: ML_ORDER_SYNC_BATCH_SIZE,
+    })
+  } catch (error) {
+    console.error('[ML Sync] Falha ao processar requisição de sincronização:', error)
+    throw error
+  }
 
   return {
     success: true,
